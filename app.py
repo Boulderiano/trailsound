@@ -333,7 +333,7 @@ def main():
     # Sliders
     target_minutes = st.sidebar.slider(
         "**Duración Total de la Canción (min)**", 
-        min_value=0.5, max_value=5.0, value=1.0, step=0.1,
+        min_value=0.2, max_value=3.0, value=1.0, step=0.1,
         help="Establece la duración deseada para la pieza musical."
     )
     tempo = st.sidebar.slider(
