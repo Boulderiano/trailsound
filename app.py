@@ -380,10 +380,7 @@ def main():
         )
         
         # --- Contenedor para la Carga (La única estructura visible en el centro) ---
-        st.markdown(
-            f'<div class="stContainerStyle">', 
-            unsafe_allow_html=True
-        )
+
         
         st.markdown(
             "<h2 style='text-align: center; font-size: 1.5em; color: #333 !important;'>Arraste o suba su archivo GPX:</h2>", 
