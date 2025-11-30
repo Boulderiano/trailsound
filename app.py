@@ -29,6 +29,11 @@ CAJA_MIDI_NOTE = 38
 THRESHOLD_FAST_SPEED = 3.0    
 EMA_ALPHA = 0.1 # Factor de suavizado para la Cadencia (0.1 = muy suave)
 
+# --- INICIALIZACIÓN GLOBAL ---
+# Esta variable guarda el estado del suavizado (EMA) entre las ejecuciones
+smoothed_cadence = MIN_CADENCE 
+
+
 # --- FUNCIONES AUXILIARES DE AUDIO ---
 
 def download_soundfont():
@@ -129,6 +134,9 @@ def get_mapping_values(point, avg_speed, data_min_max):
 def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, beat_source, bass_source):
     """Procesa los datos GPX usando las asignaciones de variables del usuario."""
     
+    # CORRECCIÓN: La declaración global debe ir al inicio de la función
+    global smoothed_cadence 
+    
     try:
         gpx_content = io.StringIO(gpx_data_content.decode('utf-8'))
     except UnicodeDecodeError:
@@ -178,9 +186,6 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
     next_note_distance = 0.0
     last_point_time = None
     time = 0.0
-    
-    # 🎯 Inicialización para el suavizado de la cadencia
-    smoothed_cadence = MIN_CADENCE 
     
     # 3. Iteración y Muestreo
     for i in range(len(segment.points)):
@@ -237,11 +242,9 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
                 
                 # --- PERCUSIÓN (GOLPE/PULSO) ---
                 
-                # Obtener la Cadencia actual (real o estimada) para el pulso
                 raw_cadence = scaled_values['Cadencia'] * (MAX_CADENCE - MIN_CADENCE) + MIN_CADENCE
                 
-                # 🎯 APLICAR SUAVIZADO (EMA): Esto garantiza transiciones graduales
-                global smoothed_cadence # Para acceder al valor entre iteraciones
+                # Aplicamos el suavizado (EMA)
                 if next_note_distance == 0.0:
                     smoothed_cadence = raw_cadence
                 else:
@@ -260,7 +263,6 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
 
                 # 4. Generar Múltiples Golpes de Percusión
                 
-                # Cuántos pulsos caben dentro de la duración de la nota melódica (duration)
                 num_pulses = math.floor(duration / beat_duration_midi)
                 
                 if avg_speed < THRESHOLD_FAST_SPEED:
@@ -271,7 +273,6 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
                 # Generamos los pulsos
                 for j in range(num_pulses):
                     pulse_time = time + (j * beat_duration_midi)
-                    # La duración de cada golpe de percusión es muy corta (staccato)
                     midifile.addNote(TRACK_PERCUSION, CANAL_PERCUSION, percussion_note, pulse_time, 0.1, PERCUSION_VELOCITY)
 
                 # --- AÑADIR NOTAS A TRACKS ---
@@ -289,7 +290,7 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
     midi_buffer.seek(0)
     return midi_buffer
 
-# --- FUNCIÓN PRINCIPAL DE STREAMLIT (omitted for brevity, assume it remains the same) ---
+# --- FUNCIÓN PRINCIPAL DE STREAMLIT ---
 def main():
     st.set_page_config(page_title="Trail Sonification App", layout="centered")
 
