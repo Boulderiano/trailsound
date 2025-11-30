@@ -3,6 +3,10 @@ import gpxpy
 from midiutil.MidiFile import MIDIFile
 import math
 import io
+import os
+import subprocess
+import tempfile
+from pydub import AudioSegment # Necesario para el manejo de audio
 
 # --- AJUSTES DE MAPEO ---
 ESCALA_BASE = 60
@@ -20,7 +24,56 @@ TRACK_MELODIA = 0
 TRACK_PERCUSION = 1           
 CANAL_PERCUSION = 9           
 
-# --- FUNCIONES AUXILIARES ---
+# --- FUNCIONES AUXILIARES DE AUDIO ---
+
+def download_soundfont():
+    """Descarga el SoundFont si no está presente en el entorno de Streamlit."""
+    sf2_path = "FluidR3Mono_GM.sf3"
+    # Solo intenta descargar si el archivo no existe
+    if not os.path.exists(sf2_path):
+        st.info("Descargando el sintetizador de sonido (sólo la primera vez)...")
+        # Usamos os.system para asegurar que wget se ejecute en el entorno
+        os.system(f"wget -q https://github.com/musescore/MuseScore/raw/master/share/sound/FluidR3Mono_GM.sf3")
+    return sf2_path
+
+@st.cache_data(show_spinner=False)
+def convert_midi_to_audio(midi_buffer):
+    """Convierte un buffer MIDI a un archivo WAV usando fluidsynth y devuelve el contenido."""
+    
+    sf2_path = download_soundfont()
+    midi_buffer.seek(0)
+    
+    # 1. Creamos un archivo temporal para el MIDI
+    with tempfile.NamedTemporaryFile(suffix='.mid', delete=False) as tmp_midi:
+        tmp_midi.write(midi_buffer.read())
+        tmp_midi_path = tmp_midi.name
+
+    # 2. Definimos la ruta de salida del WAV
+    tmp_wav_path = tmp_midi_path.replace('.mid', '.wav')
+    
+    # 3. Ejecutamos fluidsynth para convertir MIDI a WAV
+    try:
+        command = [
+            "fluidsynth", "-ni", sf2_path, tmp_midi_path, "-F", tmp_wav_path, "-r", "44100"
+        ]
+        subprocess.run(command, check=True, capture_output=True)
+        
+        # 4. Leemos el contenido WAV y limpiamos los archivos temporales
+        with open(tmp_wav_path, "rb") as f:
+            wav_content = f.read()
+        
+        return wav_content
+
+    except subprocess.CalledProcessError as e:
+        st.error(f"Error en la conversión de audio (Fluidsynth): {e.stderr.decode()}")
+        return None
+    finally:
+        # 5. Limpieza
+        os.remove(tmp_midi_path)
+        if os.path.exists(tmp_wav_path):
+            os.remove(tmp_wav_path)
+
+# --- FUNCIONES AUXILIARES DE MAPEO ---
 
 def snap_to_scale(pitch):
     """Ajusta un tono MIDI a la nota más cercana en la escala pentatónica."""
@@ -48,7 +101,8 @@ def get_cadence_from_point(p_curr):
     return None
 
 # --- FUNCIÓN DE LÓGICA CENTRAL (SONIFICACIÓN) ---
-def generate_midi_file(gpx_data_content, target_minutes, tempo):
+@st.cache_data
+def generate_midi_file(gpx_data_content, scale_factor, tempo):
     """Procesa los datos GPX y devuelve el archivo MIDI en un buffer."""
     
     try:
@@ -77,7 +131,7 @@ def generate_midi_file(gpx_data_content, target_minutes, tempo):
     ele_max = max(all_elevations)
     ele_range = ele_max - ele_min
     
-    notes_needed = target_minutes * tempo
+    notes_needed = scale_factor * tempo
     DISTANCE_STEP_M = max(5.0, total_distance_m / notes_needed)
     
     midifile = MIDIFile(2)
@@ -161,39 +215,41 @@ def generate_midi_file(gpx_data_content, target_minutes, tempo):
 def main():
     st.set_page_config(page_title="Trail Sonification App", layout="centered")
 
-    # Ocultar "Made with Streamlit" y la barra lateral por defecto
-    # También añadir estilo para el botón principal
+    # 1. CSS para estilizar el contenedor y ocultar la UI de Streamlit
     hide_streamlit_style = """
         <style>
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
         header {visibility: hidden;}
         
-        /* Estilo para el botón "Get your trail song" */
-        div.stButton > button {
-            background-color: #2ED1B0; /* Color turquesa */
-            color: white;
-            padding: 0.75rem 2.5rem;
-            border-radius: 0.5rem;
-            border: none;
-            font-size: 1.25rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s ease-in-out;
+        /* Estilo para la tarjeta central */
+        .stContainerStyle {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 500px;
+            margin: 20px auto;
         }
-        div.stButton > button:hover {
-            background-color: #25A890; /* Un poco más oscuro al pasar el ratón */
-            transform: scale(1.05);
+
+        /* Oculta la etiqueta del uploader (solo muestra el recuadro de drag & drop) */
+        .stFileUploader label > div {
+            font-size: 1.2em !important;
+            padding: 10px 0;
+            text-align: center;
+        }
+        .stFileUploader > div > div > label > div > div:nth-child(2) {
+            display: none;
         }
         </style>
     """
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-    # --- Diseño de la Página Principal ---
+    # --- Títulos Centrales ---
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
-        st.write("") 
         st.write("") 
         st.markdown(
             "<h1 style='text-align: center; font-size: 4em; font-weight: 900; color: #333; margin-bottom: 0;'>TRAIL SOUND</h1>", 
@@ -203,73 +259,85 @@ def main():
             "<p style='text-align: center; font-size: 1.5em; color: #555;'>Transform your trail runs into unique melodies</p>", 
             unsafe_allow_html=True
         )
-        st.write("") 
+        st.markdown("---") 
 
-        # Inicializar st.session_state si no existe
-        if 'show_upload_section' not in st.session_state:
-            st.session_state.show_upload_section = False
-
-        if not st.session_state.show_upload_section:
-            # Botón "Get your trail song"
-            col_btn1, col_btn2, col_btn3 = st.columns([1,2,1])
-            with col_btn2:
-                # Al hacer clic en el botón, cambia el estado y se muestra la sección de upload
-                if st.button("Get your trail song", key="main_button_action"):
-                    st.session_state.show_upload_section = True
-                    # Ya no usamos st.experimental_rerun() aquí
-
-            st.markdown(
-                "<p style='text-align: center; color: #777;'>Upload a GPX file</p>", 
-                unsafe_allow_html=True
-            )
+    # --- Contenedor Central para la Carga y Ajustes ---
+    col_card_left, col_card_center, col_card_right = st.columns([1, 3, 1])
+    
+    with col_card_center:
+        # 1. Inicio del Contenedor Estilizado
+        st.markdown(
+            f'<div class="stContainerStyle">', 
+            unsafe_allow_html=True
+        )
         
-        # --- Sección de Carga y Sliders (se muestra si 'show_upload_section' es True) ---
-        if st.session_state.show_upload_section:
-            st.markdown("---")
-            st.markdown("<p style='text-align: center; font-size: 1.2em;'>Sube tu archivo GPX y ajusta los parámetros:</p>", unsafe_allow_html=True)
-            
-            uploaded_file = st.file_uploader(
-                "**Archivo GPX**", 
-                type=["gpx"],
-                help="El archivo debe ser un archivo .gpx de tu actividad."
-            )
+        st.markdown(
+            "<h2 style='text-align: center; font-size: 1.5em;'>Arraste o suba su archivo GPX:</h2>", 
+            unsafe_allow_html=True
+        )
+        
+        # --- CARGADOR DE ARCHIVOS (Elemento principal de la interacción) ---
+        uploaded_file = st.file_uploader(
+            "Archivo GPX", 
+            type=["gpx"],
+            label_visibility="collapsed", 
+            help="Arrastre y suelte su archivo GPX aquí, o haga clic para seleccionar."
+        )
 
-            target_minutes = st.slider(
-                "**Duración Total de la Canción (min)**", 
-                min_value=0.5, max_value=5.0, value=1.0, step=0.1,
-                help="Establece la duración deseada para la pieza musical."
-            )
-            tempo = st.slider(
-                "**Tempo Base (BPM)**", 
-                min_value=60, max_value=180, value=100, step=10,
-                help="Define la velocidad general de la música."
-            )
-            
-            st.markdown("---")
+        st.markdown("---")
 
-            if uploaded_file is not None:
-                # El procesamiento ahora ocurre solo cuando uploaded_file NO es None
-                # y no causará un reinicio completo si el estado del botón no cambia.
-                gpx_data_content = uploaded_file.read()
-                
-                with st.spinner('Procesando datos y componiendo...'):
-                    try:
-                        midi_buffer = generate_midi_file(gpx_data_content, target_minutes, tempo)
-                        
-                        st.success("¡Composición finalizada! Tu archivo MIDI está listo.")
-                        
-                        st.download_button(
-                            label="Descargar Archivo MIDI (.mid)",
-                            data=midi_buffer,
-                            file_name=f"trail_music_{target_minutes}min_{tempo}bpm.mid",
-                            mime="audio/midi",
-                            help="Haz clic para descargar tu canción."
-                        )
-                        st.info("Abre el archivo MIDI con cualquier reproductor musical o software de notación.")
-                        
-                    except Exception as e:
-                        st.error("Ocurrió un error. Asegúrate de que el GPX sea válido y tenga datos de elevación.")
-                        st.exception(e)
-                
+        # --- SLIDERS DE AJUSTE ---
+        target_minutes = st.slider(
+            "**Duración Total de la Canción (min)**", 
+            min_value=0.5, max_value=5.0, value=1.0, step=0.1,
+            help="Establece la duración deseada para la pieza musical."
+        )
+        tempo = st.slider(
+            "**Tempo Base (BPM)**", 
+            min_value=60, max_value=180, value=100, step=10,
+            help="Define la velocidad general de la música."
+        )
+        
+        # 2. Cierre del contenedor estilizado
+        st.markdown('</div>', unsafe_allow_html=True) 
+
+    # --- Procesamiento y Descarga (Ocurre al subir el archivo) ---
+    if uploaded_file is not None:
+        gpx_data_content = uploaded_file.read()
+        
+        # Columna de centrado para el mensaje de éxito y el botón
+        col_msg1, col_msg2, col_msg3 = st.columns([1, 3, 1])
+        with col_msg2:
+            with st.spinner('Procesando datos y componiendo...'):
+                try:
+                    # Usamos la escala de minutos del slider * 0.4 para la compresión (factor de escala)
+                    scale_factor = target_minutes * 0.4 
+                    midi_buffer = generate_midi_file(gpx_data_content, scale_factor, tempo)
+                    
+                    st.success("¡Composición finalizada! Tu archivo MIDI está listo.")
+                    
+                    # --- REPRODUCTOR DE AUDIO ---
+                    wav_content = convert_midi_to_audio(midi_buffer)
+                    
+                    if wav_content:
+                        st.subheader("Escucha tu Melodía:")
+                        st.audio(wav_content, format='audio/wav')
+                    else:
+                        st.warning("No se pudo generar el reproductor de audio, pero puedes descargar el archivo MIDI.")
+
+                    # 2. Botón de Descarga
+                    st.download_button(
+                        label="Descargar Archivo MIDI (.mid)",
+                        data=midi_buffer,
+                        file_name=f"trail_music_{target_minutes}min_{tempo}bpm.mid",
+                        mime="audio/midi",
+                        help="Haz clic para descargar tu canción."
+                    )
+                    st.info("Abre el archivo MIDI con cualquier reproductor musical o software de notación.")
+                    
+                except Exception as e:
+                    st.error("Ocurrió un error. Asegúrate de que el GPX sea válido y tenga datos de elevación.")
+                    st.exception(e)
+
 if __name__ == "__main__":
     main()
