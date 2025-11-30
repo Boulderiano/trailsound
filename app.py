@@ -328,7 +328,7 @@ def main():
 
 
     # --- Sidebar Configuration (New Location for Controls) ---
-    st.sidebar.header("Ajustes Musicales")
+    st.sidebar.header("Adjustments")
 
     # Sliders
     target_minutes = st.sidebar.slider(
