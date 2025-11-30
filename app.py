@@ -30,7 +30,7 @@ THRESHOLD_FAST_SPEED = 3.0
 EMA_ALPHA = 0.1 # Factor de suavizado para la Cadencia (0.1 = muy suave)
 
 # --- INICIALIZACIÓN GLOBAL ---
-smoothed_cadence = MIN_CADENCE 
+smoothed_cadence = 60.0 # Valor inicial
 
 
 # --- FUNCIONES AUXILIARES DE AUDIO ---
@@ -137,6 +137,7 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
         
     gpx = gpxpy.parse(gpx_content)
 
+    # 1. PRE-CÁLCULO (Rango de Altitud y Distancia Total)
     all_elevations = []
     segment = gpx.tracks[0].segments[0]
     total_distance_m = 0.0
@@ -163,7 +164,7 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
     notes_needed = scale_factor * tempo
     DISTANCE_STEP_M = max(5.0, total_distance_m / notes_needed)
     
-    midifile = MIDIFile(3)
+    midifile = MIDIFile(3) # 3 pistas (Melodía, Percusión, Bajo)
     for track in range(3):
         midifile.addTempo(track, 0, tempo)
     
@@ -371,6 +372,7 @@ def main():
         )
         
         # --- Contenedor para la Carga (Mantiene el uploader centrado) ---
+        # Ahora el st.markdown que crea la tarjeta envuelve directamente solo el uploader y el h2.
         st.markdown(
             f'<div class="stContainerStyle" style="max-width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); border: 1px solid #ddd; background-color: white; padding: 20px;">', 
             unsafe_allow_html=True
