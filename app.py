@@ -380,11 +380,12 @@ def main():
             "<p style='text-align: center; font-size: 1.5em; color: #555;'>Transform your trail runs into unique melodies</p>", 
             unsafe_allow_html=True
         )
-        # ELIMINAR ESTA LÍNEA -> st.markdown("---") 
+        # 🎯 Eliminación de la línea residual que creaba el cuadro blanco no deseado
+        # st.markdown("---") 
         
         # --- Contenedor para la Carga (Mantiene el uploader centrado) ---
         st.markdown(
-            f'<div class="stContainerStyle" style="max-width: 100%; box-shadow: none; border: 1px solid #ddd; background-color: #f9f9f9; padding: 20px;">', 
+            f'<div class="stContainerStyle" style="max-width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); border: 1px solid #ddd; background-color: white; padding: 20px;">', 
             unsafe_allow_html=True
         )
         
