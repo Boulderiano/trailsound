@@ -27,8 +27,7 @@ CANAL_PERCUSION = 9
 BOMBO_MIDI_NOTE = 36          
 CAJA_MIDI_NOTE = 38           
 THRESHOLD_FAST_SPEED = 3.0    
-EMA_ALPHA = 0.05 # <-- AJUSTE CLAVE: Reducido para transición suave/gradual
-# 
+EMA_ALPHA = 0.05 # Factor de suavizado para la Cadencia (0.05 = transición muy suave)
 
 # --- INICIALIZACIÓN GLOBAL ---
 smoothed_cadence = MIN_CADENCE 
@@ -247,10 +246,8 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
 
                 num_pulses = math.floor(duration / beat_duration_midi)
                 
-                if avg_speed < THRESHOLD_FAST_SPEED:
-                    percussion_note = BOMBO_MIDI_NOTE 
-                else:
-                    percussion_note = CAJA_MIDI_NOTE 
+                # 🎯 CAMBIO: Usar solo el BOMBO (36) como solicitado
+                percussion_note = BOMBO_MIDI_NOTE 
 
                 for j in range(num_pulses):
                     pulse_time = time + (j * beat_duration_midi)
@@ -328,12 +325,12 @@ def main():
 
 
     # --- Sidebar Configuration (New Location for Controls) ---
-    st.sidebar.header("Adjustments")
+    st.sidebar.header("Ajustes Musicales")
 
     # Sliders
     target_minutes = st.sidebar.slider(
-        "**Song duration (min)**", 
-        min_value=0.2, max_value=3.0, value=1.0, step=0.1,
+        "**Duración Total de la Canción (min)**", 
+        min_value=0.5, max_value=5.0, value=1.0, step=0.1,
         help="Establece la duración deseada para la pieza musical."
     )
     tempo = st.sidebar.slider(
@@ -343,7 +340,7 @@ def main():
     )
     
     st.sidebar.markdown("---")
-    st.sidebar.markdown("<h3 style='text-align: center;'>Track selector</h3>", unsafe_allow_html=True)
+    st.sidebar.markdown("<h3 style='text-align: center;'>Asignación de Datos</h3>", unsafe_allow_html=True)
     
     SOURCES = ['Altitud', 'Ritmo (Velocidad)', 'Cadencia']
 
@@ -383,10 +380,13 @@ def main():
         )
         
         # --- Contenedor para la Carga (La única estructura visible en el centro) ---
-    
+        st.markdown(
+            f'<div class="stContainerStyle" style="max-width: 100%;">', 
+            unsafe_allow_html=True
+        )
         
         st.markdown(
-            "<h2 style='text-align: center; font-size: 1.5em;'>Upload or drag your GPX file:</h2>", 
+            "<h2 style='text-align: center; font-size: 1.5em;'>Arraste o suba su archivo GPX:</h2>", 
             unsafe_allow_html=True
         )
         
@@ -394,7 +394,7 @@ def main():
             "Archivo GPX", 
             type=["gpx"],
             label_visibility="collapsed", 
-            help="Click here to upload or drag and drop your GPX file."
+            help="Arrastre y suelte su archivo GPX aquí, o haga clic para seleccionar."
         )
 
         st.markdown('</div>', unsafe_allow_html=True) 
