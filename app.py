@@ -11,7 +11,7 @@ import tempfile
 ESCALA_BASE = 60
 RANGO_NOTAS = 48
 TEMPO_BASE_BPM = 100
-DURACION_MINIMA_NOTA = 0.25
+DURACION_MINIMA_NOTA = 0.125 
 VELOCIDAD_MAX_PARA_DURACION = 5.0
 PENTATONIC_SCALE = [0, 2, 4, 7, 9] 
 MIN_CADENCE = 60.0
@@ -27,10 +27,11 @@ CANAL_PERCUSION = 9
 BOMBO_MIDI_NOTE = 36          
 CAJA_MIDI_NOTE = 38           
 THRESHOLD_FAST_SPEED = 3.0    
-EMA_ALPHA = 0.1 # Factor de suavizado para la Cadencia (0.1 = muy suave)
+EMA_ALPHA = 0.05 # <-- AJUSTE CLAVE: Reducido para transición suave/gradual
+# 
 
 # --- INICIALIZACIÓN GLOBAL ---
-smoothed_cadence = 60.0 # Valor inicial
+smoothed_cadence = MIN_CADENCE 
 
 
 # --- FUNCIONES AUXILIARES DE AUDIO ---
@@ -275,9 +276,6 @@ def main():
     st.set_page_config(page_title="Trail Sonification App", layout="centered")
 
     # 1. CSS para estilizar el contenedor y ocultar la UI de Streamlit
-    # *******************************************************************
-    # *** CORRECCIÓN: Fondo oscuro y remoción de artefactos blancos ***
-    # *******************************************************************
     hide_streamlit_style = """
         <style>
         #MainMenu {visibility: hidden;}
@@ -286,7 +284,7 @@ def main():
         
         /* FUERZA el fondo a un color oscuro (similar al sidebar) */
         .stApp {
-            background-color: #0E1117 !important; /* Color oscuro por defecto de Streamlit */
+            background-color: #0E1117 !important; 
         }
 
         /* Estilo para la tarjeta central: FUERZA BLANCO para los elementos interactivos */
@@ -294,7 +292,7 @@ def main():
             background-color: white;
             padding: 30px;
             border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); /* Sombra más oscura en fondo oscuro */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); 
             width: 100%;
             max-width: 500px;
             margin: 20px auto;
@@ -303,6 +301,11 @@ def main():
         /* Títulos Centrales deben ser blancos en el fondo oscuro */
         h1, h2, h3, p {
             color: white !important; 
+        }
+
+        /* Título del uploader dentro de la tarjeta debe ser oscuro */
+        .stContainerStyle h2 {
+            color: #333 !important;
         }
 
         /* Uploader styling */
@@ -380,10 +383,13 @@ def main():
         )
         
         # --- Contenedor para la Carga (La única estructura visible en el centro) ---
-
+        st.markdown(
+            f'<div class="stContainerStyle">', 
+            unsafe_allow_html=True
+        )
         
         st.markdown(
-            "<h2 style='text-align: center; font-size: 1.5em; color: #333 !important;'>Arraste o suba su archivo GPX:</h2>", 
+            "<h2 style='text-align: center; font-size: 1.5em;'>Arraste o suba su archivo GPX:</h2>", 
             unsafe_allow_html=True
         )
         
