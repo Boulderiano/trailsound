@@ -325,7 +325,49 @@ def main():
     """
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-    # --- Títulos Centrales ---
+
+    # --- Sidebar Configuration (New Location for Controls) ---
+    st.sidebar.header("Ajustes Musicales")
+
+    # Sliders
+    target_minutes = st.sidebar.slider(
+        "**Duración Total de la Canción (min)**", 
+        min_value=0.5, max_value=5.0, value=1.0, step=0.1,
+        help="Establece la duración deseada para la pieza musical."
+    )
+    tempo = st.sidebar.slider(
+        "**Tempo Base (BPM)**", 
+        min_value=60, max_value=180, value=100, step=10,
+        help="Define la velocidad general de la música."
+    )
+    
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("<h3 style='text-align: center;'>Asignación de Datos</h3>", unsafe_allow_html=True)
+    
+    SOURCES = ['Altitud', 'Ritmo (Velocidad)', 'Cadencia']
+
+    # Selectors
+    melody_source = st.sidebar.selectbox(
+        "**1. Melodía (Tono)**",
+        SOURCES,
+        index=0, 
+        help="El dato que controlará las notas (grave/agudo)."
+    )
+    beat_source = st.sidebar.selectbox(
+        "**2. Beat (Duración/Pulso)**",
+        SOURCES,
+        index=1, 
+        help="El dato que controlará el largo de las notas (lento/rápido)."
+    )
+    bass_source = st.sidebar.selectbox(
+        "**3. Bajos (Tono)**",
+        SOURCES,
+        index=2, 
+        help="El dato que controlará el tono del bajo (grave/agudo)."
+    )
+    st.sidebar.markdown("---") # Separador para la sidebar
+
+    # --- Títulos Centrales y Uploader ---
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
@@ -339,16 +381,10 @@ def main():
             unsafe_allow_html=True
         )
         st.markdown("---") 
-
-    # --- Contenedor Central para la Carga y Ajustes ---
-    col_card_left, col_card_center, col_card_right = st.columns([1, 3, 1])
-    
-    SOURCES = ['Altitud', 'Ritmo (Velocidad)', 'Cadencia']
-
-    with col_card_center:
-        # 1. Inicio del Contenedor Estilizado
+        
+        # --- Contenedor para la Carga (Mantiene el uploader centrado) ---
         st.markdown(
-            f'<div class="stContainerStyle">', 
+            f'<div class="stContainerStyle" style="max-width: 100%; box-shadow: none; border: 1px solid #ddd; background-color: #f9f9f9; padding: 20px;">', 
             unsafe_allow_html=True
         )
         
@@ -364,51 +400,13 @@ def main():
             help="Arrastre y suelte su archivo GPX aquí, o haga clic para seleccionar."
         )
 
-        st.markdown("---")
-
-        # --- SLIDERS DE AJUSTE ---
-        target_minutes = st.slider(
-            "**Duración Total de la Canción (min)**", 
-            min_value=0.5, max_value=5.0, value=1.0, step=0.1,
-            help="Establece la duración deseada para la pieza musical."
-        )
-        tempo = st.slider(
-            "**Tempo Base (BPM)**", 
-            min_value=60, max_value=180, value=100, step=10,
-            help="Define la velocidad general de la música."
-        )
-        
-        st.markdown("---")
-        st.markdown("<h3 style='text-align: center;'>Asignación de Datos a Música</h3>", unsafe_allow_html=True)
-        
-        # --- SELECTORES DINÁMICOS ---
-        melody_source = st.selectbox(
-            "**1. Melodía (Tono)**",
-            SOURCES,
-            index=0, # Altitud por defecto
-            help="El dato que controlará las notas (grave/agudo)."
-        )
-        beat_source = st.selectbox(
-            "**2. Beat (Duración/Pulso)**",
-            SOURCES,
-            index=1, # Ritmo (Velocidad) por defecto
-            help="El dato que controlará el largo de las notas (lento/rápido)."
-        )
-        bass_source = st.selectbox(
-            "**3. Bajos (Tono)**",
-            SOURCES,
-            index=2, # Cadencia por defecto
-            help="El dato que controlará el tono del bajo (grave/agudo)."
-        )
-        
-        # Cierre del contenedor estilizado
         st.markdown('</div>', unsafe_allow_html=True) 
 
     # --- Procesamiento y Descarga (Ocurre al subir el archivo) ---
     if uploaded_file is not None:
         gpx_data_content = uploaded_file.read()
         
-        col_msg1, col_msg2, col_msg3 = st.columns([1, 3, 1])
+        col_msg1, col_msg2, col_msg3 = st.columns([1, 2, 1])
         with col_msg2:
             with st.spinner('Procesando datos y componiendo...'):
                 try:
