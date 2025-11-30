@@ -23,6 +23,12 @@ TRACK_MELODIA = 0
 TRACK_PERCUSION = 1           
 CANAL_PERCUSION = 9           
 
+# --- AJUSTES ESPECÍFICOS DE RITMO/PERCUSIÓN ---
+BOMBO_MIDI_NOTE = 36          # C2 (Bass Drum - Bombo, para el golpe fuerte/pulso)
+CAJA_MIDI_NOTE = 38           # D2 (Snare Drum - Caja, para el ritmo de carrera)
+THRESHOLD_FAST_SPEED = 3.0    # m/s (Umbral para considerar la carrera como rápida)
+
+
 # --- FUNCIONES AUXILIARES DE AUDIO ---
 
 def download_soundfont():
@@ -165,7 +171,7 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
     notes_needed = scale_factor * tempo
     DISTANCE_STEP_M = max(5.0, total_distance_m / notes_needed)
     
-    midifile = MIDIFile(3) # Aumentamos a 3 pistas (Melodía, Percusión, Bajo)
+    midifile = MIDIFile(3) # 3 pistas (Melodía, Percusión, Bajo)
     for track in range(3):
         midifile.addTempo(track, 0, tempo)
     
@@ -208,50 +214,47 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
                 
                 # --- ASIGNACIÓN DINÁMICA DE PARÁMETROS MUSICALES ---
                 
-                # 1. MELODÍA (TONO): Mapeo de 0.0-1.0 a RANGO_NOTAS
-                
-                # Obtener el valor escalado (0 a 1) para la fuente de la melodía
+                # 1. MELODÍA (TONO)
                 melody_scaled_value = scaled_values[melody_source]
-                
                 pitch_raw = pitch_base + (melody_scaled_value * RANGO_NOTAS)
                 pitch_melodia = snap_to_scale(pitch_raw) 
                 pitch_melodia = int(pitch_melodia)
                 
-                # 2. DURACIÓN (BEAT): Mapeo inverso de la Velocidad
-                
+                # 2. DURACIÓN (BEAT): 
                 # Si la fuente del beat es Ritmo (Velocidad), usamos avg_speed
                 if beat_source == 'Ritmo (Velocidad)':
                     beat_speed = scaled_values['Ritmo (Velocidad)'] # m/s
                 # Si es Altitud/Cadencia, usamos el valor escalado de 0 a 1 para simular la velocidad
                 else:
-                    # Creamos un valor de velocidad simulada inverso (1 - Altitud/Cadencia)
                     beat_value = 1.0 - scaled_values[beat_source]
                     beat_speed = beat_value * VELOCIDAD_MAX_PARA_DURACION
                 
                 speed_factor = max(0, 1 - (beat_speed / VELOCIDAD_MAX_PARA_DURACION))
                 duration = DURACION_MINIMA_NOTA + (speed_factor * (4.0 - DURACION_MINIMA_NOTA))
 
-
-                # 3. BAJOS (TONO): Mapeo de 0.0-1.0 a rango de bajo (C1-C3)
-                
-                # Obtener el valor escalado (0 a 1) para la fuente del bajo
+                # 3. BAJOS (TONO)
                 bass_scaled_value = scaled_values[bass_source]
-                
-                MIN_PITCH_BAJO = 24  # C1
-                MAX_PITCH_BAJO = 48  # C3
+                MIN_PITCH_BAJO = 24  
+                MAX_PITCH_BAJO = 48  
                 pitch_bajo_range = MAX_PITCH_BAJO - MIN_PITCH_BAJO
                 
                 pitch_bajo = MIN_PITCH_BAJO + round(bass_scaled_value * pitch_bajo_range)
                 pitch_bajo = int(pitch_bajo)
                 
-                # --- PERCUSIÓN (Pulso Fijo) ---
-                percussion_note = 42 # Hi-Hat (pulso ligero)
-                percussion_duration = duration # El pulso sigue la duración de la melodía
-
+                # --- PERCUSIÓN (GOLPE/PULSO) ---
+                
+                # Lógica de Percusión: Más extrema (Bombo/Caja)
+                if beat_speed < THRESHOLD_FAST_SPEED:
+                    percussion_note = BOMBO_MIDI_NOTE # Lento/Trote (Bombo más profundo)
+                    percussion_duration = duration   # El golpe sigue la duración del ritmo (lento = notas largas)
+                else:
+                    percussion_note = CAJA_MIDI_NOTE # Rápido (Caja más rítmica)
+                    percussion_duration = duration / 2.0 # Golpes más rápidos y secos (semicorcheas)
+                
                 # --- AÑADIR NOTAS A TRACKS ---
-                midifile.addNote(TRACK_MELODIA, 0, pitch_melodia, time, duration, 100) # Melodía
-                midifile.addNote(2, 0, pitch_bajo, time, duration, 90)                 # Bajos (Track 2)
-                midifile.addNote(TRACK_PERCUSION, CANAL_PERCUSION, percussion_note, time, duration, PERCUSION_VELOCITY) # Percusión (Track 1)
+                midifile.addNote(TRACK_MELODIA, 0, pitch_melodia, time, duration, 100)
+                midifile.addNote(2, 0, pitch_bajo, time, duration, 90)                 
+                midifile.addNote(TRACK_PERCUSION, CANAL_PERCUSION, percussion_note, time, percussion_duration, 100) 
 
                 next_note_distance += DISTANCE_STEP_M
                 last_point_time = p_curr.time
