@@ -332,7 +332,7 @@ def main():
 
     # Sliders
     target_minutes = st.sidebar.slider(
-        "**Duración Total de la Canción (min)**", 
+        "**Song duration (min)**", 
         min_value=0.2, max_value=3.0, value=1.0, step=0.1,
         help="Establece la duración deseada para la pieza musical."
     )
@@ -343,7 +343,7 @@ def main():
     )
     
     st.sidebar.markdown("---")
-    st.sidebar.markdown("<h3 style='text-align: center;'>Asignación de Datos</h3>", unsafe_allow_html=True)
+    st.sidebar.markdown("<h3 style='text-align: center;'>Track selector</h3>", unsafe_allow_html=True)
     
     SOURCES = ['Altitud', 'Ritmo (Velocidad)', 'Cadencia']
 
@@ -386,7 +386,7 @@ def main():
     
         
         st.markdown(
-            "<h2 style='text-align: center; font-size: 1.5em;'>Arraste o suba su archivo GPX:</h2>", 
+            "<h2 style='text-align: center; font-size: 1.5em;'>Upload or drag your GPX file:</h2>", 
             unsafe_allow_html=True
         )
         
@@ -394,7 +394,7 @@ def main():
             "Archivo GPX", 
             type=["gpx"],
             label_visibility="collapsed", 
-            help="Arrastre y suelte su archivo GPX aquí, o haga clic para seleccionar."
+            help="Click here to upload or drag and drop your GPX file."
         )
 
         st.markdown('</div>', unsafe_allow_html=True) 
