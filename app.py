@@ -39,7 +39,7 @@ def download_soundfont():
     """Descarga el SoundFont si no está presente en el entorno de Streamlit."""
     sf2_path = "FluidR3Mono_GM.sf3"
     if not os.path.exists(sf2_path):
-        st.info("Descargando el sintetizador de sonido (sólo la primera vez)...")
+        st.info("Downloading sound synthesizer (first time only)...")
         os.system(f"wget -q https://github.com/musescore/MuseScore/raw/master/share/sound/FluidR3Mono_GM.sf3")
     return sf2_path
 
@@ -68,7 +68,7 @@ def convert_midi_to_audio(midi_buffer):
         return wav_content
 
     except subprocess.CalledProcessError as e:
-        st.error(f"Error en la conversión de audio (Fluidsynth): {e.stderr.decode()}")
+        st.error(f"Error in audio conversion (Fluidsynth): {e.stderr.decode()}")
         return None
     finally:
         os.remove(tmp_midi_path)
@@ -151,7 +151,7 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
             total_distance_m += distance_val if distance_val is not None else 0
     
     if not all_elevations:
-        raise ValueError("El archivo GPX no contiene datos de elevación válidos.")
+        raise ValueError("The GPX file contains no valid elevation data.")
 
     ele_min = min(all_elevations)
     ele_max = max(all_elevations)
@@ -164,7 +164,7 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
     notes_needed = scale_factor * tempo
     DISTANCE_STEP_M = max(5.0, total_distance_m / notes_needed)
     
-    midifile = MIDIFile(3) # 3 pistas (Melodía, Percusión, Bajo)
+    midifile = MIDIFile(3) # 3 tracks (Melody, Percussion, Bass)
     for track in range(3):
         midifile.addTempo(track, 0, tempo)
     
@@ -201,13 +201,13 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
                 
                 scaled_values = get_mapping_values(p_curr, avg_speed, data_min_max)
                 
-                # 1. MELODÍA (TONO)
+                # 1. MELODY (PITCH)
                 melody_scaled_value = scaled_values[melody_source]
                 pitch_raw = pitch_base + (melody_scaled_value * RANGO_NOTAS)
                 pitch_melodia = snap_to_scale(pitch_raw) 
                 pitch_melodia = int(pitch_melodia)
                 
-                # 2. DURACIÓN (BEAT): 
+                # 2. DURATION (BEAT): 
                 if beat_source == 'Ritmo (Velocidad)':
                     beat_speed = scaled_values['Ritmo (Velocidad)']
                 else:
@@ -217,7 +217,7 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
                 speed_factor = max(0, 1 - (beat_speed / VELOCIDAD_MAX_PARA_DURACION))
                 duration = DURACION_MINIMA_NOTA + (speed_factor * (4.0 - DURACION_MINIMA_NOTA))
 
-                # 3. BAJOS (TONO)
+                # 3. BASS (PITCH)
                 bass_scaled_value = scaled_values[bass_source]
                 MIN_PITCH_BAJO = 24 
                 MAX_PITCH_BAJO = 48  
@@ -226,7 +226,7 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
                 pitch_bajo = MIN_PITCH_BAJO + round(bass_scaled_value * pitch_bajo_range)
                 pitch_bajo = int(pitch_bajo)
                 
-                # --- PERCUSIÓN (GOLPE/PULSO) ---
+                # --- PERCUSSION (PULSE/CADENCE) ---
                 
                 raw_cadence = scaled_values['Cadencia'] * (MAX_CADENCE - MIN_CADENCE) + MIN_CADENCE
                 
@@ -246,14 +246,14 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
 
                 num_pulses = math.floor(duration / beat_duration_midi)
                 
-                # 🎯 CAMBIO: Usar solo el BOMBO (36) como solicitado
+                # Use only the Bass Drum for constant, clear beat
                 percussion_note = BOMBO_MIDI_NOTE 
 
                 for j in range(num_pulses):
                     pulse_time = time + (j * beat_duration_midi)
                     midifile.addNote(TRACK_PERCUSION, CANAL_PERCUSION, percussion_note, pulse_time, 0.1, PERCUSION_VELOCITY)
 
-                # --- AÑADIR NOTAS A TRACKS ---
+                # --- ADD NOTES TO TRACKS ---
                 midifile.addNote(TRACK_MELODIA, 0, pitch_melodia, time, duration, 100)
                 midifile.addNote(2, 0, pitch_bajo, time, duration, 90)                 
 
@@ -272,19 +272,19 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
 def main():
     st.set_page_config(page_title="Trail Sonification App", layout="centered")
 
-    # 1. CSS para estilizar el contenedor y ocultar la UI de Streamlit
+    # 1. CSS for styling and hiding Streamlit UI
     hide_streamlit_style = """
         <style>
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
         header {visibility: hidden;}
         
-        /* FUERZA el fondo a un color oscuro (similar al sidebar) */
+        /* Forces dark background */
         .stApp {
             background-color: #0E1117 !important; 
         }
 
-        /* Estilo para la tarjeta central: FUERZA BLANCO para los elementos interactivos */
+        /* Style for the central card: WHITE background for interactive elements */
         .stContainerStyle {
             background-color: white;
             padding: 30px;
@@ -295,12 +295,12 @@ def main():
             margin: 20px auto;
         }
         
-        /* Títulos Centrales deben ser blancos en el fondo oscuro */
+        /* Central titles should be WHITE on the dark background */
         h1, h2, h3, p {
             color: white !important; 
         }
 
-        /* Título del uploader dentro de la tarjeta debe ser oscuro */
+        /* Uploader title inside the white card should be dark */
         .stContainerStyle h2 {
             color: #333 !important;
         }
@@ -315,7 +315,7 @@ def main():
             display: none;
         }
         
-        /* Ajuste de margen superior para centrar los títulos */
+        /* Adjust top margin for centering */
         .block-container {
             padding-top: 2rem !important; 
         }
@@ -325,47 +325,47 @@ def main():
 
 
     # --- Sidebar Configuration (New Location for Controls) ---
-    st.sidebar.header("Ajustes Musicales")
+    st.sidebar.header("Musical Adjustments")
 
     # Sliders
     target_minutes = st.sidebar.slider(
-        "**Duración Total de la Canción (min)**", 
+        "**Song Duration (min)**", 
         min_value=0.5, max_value=5.0, value=1.0, step=0.1,
-        help="Establece la duración deseada para la pieza musical."
+        help="Sets the desired duration for the piece."
     )
     tempo = st.sidebar.slider(
-        "**Tempo Base (BPM)**", 
+        "**Base Tempo (BPM)**", 
         min_value=60, max_value=180, value=100, step=10,
-        help="Define la velocidad general de la música."
+        help="Defines the general speed of the music."
     )
     
     st.sidebar.markdown("---")
-    st.sidebar.markdown("<h3 style='text-align: center;'>Asignación de Datos</h3>", unsafe_allow_html=True)
+    st.sidebar.markdown("<h3 style='text-align: center;'>Data Assignment</h3>", unsafe_allow_html=True)
     
     SOURCES = ['Altitud', 'Ritmo (Velocidad)', 'Cadencia']
 
     # Selectors
     melody_source = st.sidebar.selectbox(
-        "**1. Melodía (Tono)**",
+        "**1. Melody (Pitch)**",
         SOURCES,
         index=0, 
-        help="El dato que controlará las notas (grave/agudo)."
+        help="Data that controls the notes (low/high)."
     )
     beat_source = st.sidebar.selectbox(
-        "**2. Beat (Duración/Pulso)**",
+        "**2. Beat (Duration/Pulse)**",
         SOURCES,
         index=1, 
-        help="El dato que controlará el largo de las notas (lento/rápido)."
+        help="Data that controls the length of the notes (slow/fast)."
     )
     bass_source = st.sidebar.selectbox(
-        "**3. Bajos (Tono)**",
+        "**3. Bass (Pitch)**",
         SOURCES,
         index=2, 
-        help="El dato que controlará el tono del bajo (grave/agudo)."
+        help="Data that controls the bass tone (low/high)."
     )
-    st.sidebar.markdown("---") # Separador para la sidebar
+    st.sidebar.markdown("---") # Sidebar separator
 
-    # --- Títulos Centrales y Uploader ---
+    # --- Central Titles and Uploader ---
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
@@ -379,33 +379,33 @@ def main():
             unsafe_allow_html=True
         )
         
-        # --- Contenedor para la Carga (La única estructura visible en el centro) ---
+        # --- Container for the Upload (The only structure visible in the center) ---
         st.markdown(
-            f'<div class="stContainerStyle" style="max-width: 100%;">', 
+            f'<div class="stContainerStyle">', 
             unsafe_allow_html=True
         )
         
         st.markdown(
-            "<h2 style='text-align: center; font-size: 1.5em;'>Arraste o suba su archivo GPX:</h2>", 
+            "<h2 style='text-align: center; font-size: 1.5em;'>Drag or upload your GPX file:</h2>", 
             unsafe_allow_html=True
         )
         
         uploaded_file = st.file_uploader(
-            "Archivo GPX", 
+            "GPX File", 
             type=["gpx"],
             label_visibility="collapsed", 
-            help="Arrastre y suelte su archivo GPX aquí, o haga clic para seleccionar."
+            help="Drag and drop your GPX file here, or click to select."
         )
 
         st.markdown('</div>', unsafe_allow_html=True) 
 
-    # --- Procesamiento y Descarga (Ocurre al subir el archivo) ---
+    # --- Processing and Download ---
     if uploaded_file is not None:
         gpx_data_content = uploaded_file.read()
         
         col_msg1, col_msg2, col_msg3 = st.columns([1, 2, 1])
         with col_msg2:
-            with st.spinner('Procesando datos y componiendo...'):
+            with st.spinner('Processing data and composing...'):
                 try:
                     scale_factor = target_minutes * 0.4 
                     
@@ -418,29 +418,29 @@ def main():
                         bass_source
                     )
                     
-                    st.success("¡Composición finalizada! Tu archivo MIDI está listo.")
+                    st.success("Composition complete! Your MIDI file is ready.")
                     
-                    # --- REPRODUCTOR DE AUDIO ---
+                    # --- AUDIO PLAYER ---
                     wav_content = convert_midi_to_audio(midi_buffer)
                     
                     if wav_content:
-                        st.subheader("Escucha tu Melodía:")
+                        st.subheader("Listen to your Melody:")
                         st.audio(wav_content, format='audio/wav')
                     else:
-                        st.warning("No se pudo generar el reproductor de audio, pero puedes descargar el archivo MIDI.")
+                        st.warning("Could not generate the audio player, but you can download the MIDI file.")
 
-                    # 2. Botón de Descarga
+                    # 2. Download Button
                     st.download_button(
-                        label="Descargar Archivo MIDI (.mid)",
+                        label="Download MIDI File (.mid)",
                         data=midi_buffer,
                         file_name=f"trail_music_{melody_source}_{beat_source}.mid",
                         mime="audio/midi",
-                        help="Haz clic para descargar tu canción."
+                        help="Click to download your song."
                     )
-                    st.info("Abre el archivo MIDI con cualquier reproductor musical o software de notación.")
+                    st.info("Open the MIDI file with any music player or notation software.")
                     
                 except Exception as e:
-                    st.error("Ocurrió un error. Asegúrate de que el GPX sea válido y tenga datos de elevación.")
+                    st.error("An error occurred. Ensure the GPX file is valid and contains elevation data.")
                     st.exception(e)
 
 if __name__ == "__main__":
