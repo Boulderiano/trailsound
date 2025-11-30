@@ -169,8 +169,8 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
         midifile.addTempo(track, 0, tempo)
     
     # Asignación de instrumentos
-    midifile.addProgramChange(TRACK_MELODIA, 0, 0, 67)   # CAMBIO: Saxofón Tenor (67)
-    midifile.addProgramChange(2, 0, 0, 35)              # CAMBIO: Fretless Bass (35)
+    midifile.addProgramChange(TRACK_MELODIA, 0, 0, 67)   # Saxofón Tenor (67)
+    midifile.addProgramChange(2, 0, 0, 35)              # Fretless Bass (35)
     
     pitch_base = ESCALA_BASE - RANGO_NOTAS / 2
     
@@ -245,18 +245,22 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
                 else:
                     beat_duration_midi = 1.0
 
-                num_pulses = math.floor(duration / beat_duration_midi)
-                
-                # Use only the Bass Drum for constant, clear beat
+                # 🎯 CAMBIO CLAVE: Un solo golpe de tambor por nota melódica, el ritmo lo da la duración de la melodía.
                 percussion_note = BOMBO_MIDI_NOTE 
-
-                for j in range(num_pulses):
-                    pulse_time = time + (j * beat_duration_midi)
-                    midifile.addNote(TRACK_PERCUSION, CANAL_PERCUSION, percussion_note, pulse_time, 0.1, PERCUSION_VELOCITY)
-
+                
+                # Mapeamos la cadencia suavizada al volumen (Velocity) para la intensidad
+                MIN_VEL = 60
+                MAX_VEL = 127
+                cadence_normalized = (smoothed_cadence - MIN_CADENCE) / (MAX_CADENCE - MIN_CADENCE)
+                percussion_velocity = int(MIN_VEL + cadence_normalized * (MAX_VEL - MIN_VEL))
+                
+                
                 # --- ADD NOTES TO TRACKS ---
                 midifile.addNote(TRACK_MELODIA, 0, pitch_melodia, time, duration, 100)
                 midifile.addNote(2, 0, pitch_bajo, time, duration, 90)                 
+
+                # Percusión: Toca una vez, su volumen refleja la cadencia.
+                midifile.addNote(TRACK_PERCUSION, CANAL_PERCUSION, percussion_note, time, 0.1, percussion_velocity)
 
                 next_note_distance += DISTANCE_STEP_M
                 last_point_time = p_curr.time
@@ -400,7 +404,7 @@ def main():
 
         st.markdown('</div>', unsafe_allow_html=True) 
 
-    # --- Processing and Download ---
+    # --- Procesamiento y Download ---
     if uploaded_file is not None:
         gpx_data_content = uploaded_file.read()
         
