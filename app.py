@@ -162,51 +162,69 @@ def main():
     st.set_page_config(page_title="Trail Sonification App", layout="centered")
 
     # Ocultar "Made with Streamlit" y la barra lateral por defecto
+    # También añadir estilo para el botón principal
     hide_streamlit_style = """
         <style>
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
         header {visibility: hidden;}
+        
+        /* Estilo para el botón "Get your trail song" */
+        div.stButton > button {
+            background-color: #2ED1B0; /* Color turquesa */
+            color: white;
+            padding: 0.75rem 2.5rem;
+            border-radius: 0.5rem;
+            border: none;
+            font-size: 1.25rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        div.stButton > button:hover {
+            background-color: #25A890; /* Un poco más oscuro al pasar el ratón */
+            transform: scale(1.05);
+        }
         </style>
     """
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
     # --- Diseño de la Página Principal ---
-    # Centrar los elementos principales
-    col1, col2, col3 = st.columns([1, 2, 1]) # Columnas para centrar
+    col1, col2, col3 = st.columns([1, 2, 1])
     
-    with col2: # Todo el contenido principal va en la columna central
-        st.write("") # Espacio superior
-        st.write("") # Espacio superior
+    with col2:
+        st.write("") 
+        st.write("") 
         st.markdown(
-            "<h1 style='text-align: center; font-size: 4em; font-weight: 900; color: #333;'>TRAIL SOUND</h1>", 
+            "<h1 style='text-align: center; font-size: 4em; font-weight: 900; color: #333; margin-bottom: 0;'>TRAIL SOUND</h1>", 
             unsafe_allow_html=True
         )
         st.markdown(
             "<p style='text-align: center; font-size: 1.5em; color: #555;'>Transform your trail runs into unique melodies</p>", 
             unsafe_allow_html=True
         )
-        st.write("") # Espacio
+        st.write("") 
 
-        # Usar st.session_state para controlar cuándo mostrar el cargador
-        if 'show_upload' not in st.session_state:
-            st.session_state.show_upload = False
+        # Inicializar st.session_state si no existe
+        if 'show_upload_section' not in st.session_state:
+            st.session_state.show_upload_section = False
 
-        if not st.session_state.show_upload:
-            # Centrar el botón "Get your trail song"
+        if not st.session_state.show_upload_section:
+            # Botón "Get your trail song"
             col_btn1, col_btn2, col_btn3 = st.columns([1,2,1])
             with col_btn2:
-                if st.button("Get your trail song", key="main_button", help="Haz clic para empezar"):
-                    st.session_state.show_upload = True
-                    st.experimental_rerun() # Fuerza una recarga para mostrar el cargador
+                # Al hacer clic en el botón, cambia el estado y se muestra la sección de upload
+                if st.button("Get your trail song", key="main_button_action"):
+                    st.session_state.show_upload_section = True
+                    # Ya no usamos st.experimental_rerun() aquí
 
             st.markdown(
                 "<p style='text-align: center; color: #777;'>Upload a GPX file</p>", 
                 unsafe_allow_html=True
             )
         
-        # --- Contenido dinámico (se muestra después de hacer clic en el botón) ---
-        if st.session_state.show_upload:
+        # --- Sección de Carga y Sliders (se muestra si 'show_upload_section' es True) ---
+        if st.session_state.show_upload_section:
             st.markdown("---")
             st.markdown("<p style='text-align: center; font-size: 1.2em;'>Sube tu archivo GPX y ajusta los parámetros:</p>", unsafe_allow_html=True)
             
@@ -216,7 +234,6 @@ def main():
                 help="El archivo debe ser un archivo .gpx de tu actividad."
             )
 
-            # Sliders (ahora en la columna central y no en la barra lateral)
             target_minutes = st.slider(
                 "**Duración Total de la Canción (min)**", 
                 min_value=0.5, max_value=5.0, value=1.0, step=0.1,
@@ -231,6 +248,8 @@ def main():
             st.markdown("---")
 
             if uploaded_file is not None:
+                # El procesamiento ahora ocurre solo cuando uploaded_file NO es None
+                # y no causará un reinicio completo si el estado del botón no cambia.
                 gpx_data_content = uploaded_file.read()
                 
                 with st.spinner('Procesando datos y componiendo...'):
