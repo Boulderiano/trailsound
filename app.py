@@ -275,24 +275,37 @@ def main():
     st.set_page_config(page_title="Trail Sonification App", layout="centered")
 
     # 1. CSS para estilizar el contenedor y ocultar la UI de Streamlit
+    # *******************************************************************
+    # *** CORRECCIÓN: Fondo oscuro y remoción de artefactos blancos ***
+    # *******************************************************************
     hide_streamlit_style = """
         <style>
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
         header {visibility: hidden;}
         
-        /* Estilo para la tarjeta central */
+        /* FUERZA el fondo a un color oscuro (similar al sidebar) */
+        .stApp {
+            background-color: #0E1117 !important; /* Color oscuro por defecto de Streamlit */
+        }
+
+        /* Estilo para la tarjeta central: FUERZA BLANCO para los elementos interactivos */
         .stContainerStyle {
             background-color: white;
             padding: 30px;
             border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); /* Sombra más oscura en fondo oscuro */
             width: 100%;
             max-width: 500px;
             margin: 20px auto;
         }
+        
+        /* Títulos Centrales deben ser blancos en el fondo oscuro */
+        h1, h2, h3, p {
+            color: white !important; 
+        }
 
-        /* Oculta la etiqueta del uploader (solo muestra el recuadro de drag & drop) */
+        /* Uploader styling */
         .stFileUploader label > div {
             font-size: 1.2em !important;
             padding: 10px 0;
@@ -300,11 +313,6 @@ def main():
         }
         .stFileUploader > div > div > label > div > div:nth-child(2) {
             display: none;
-        }
-        
-        /* FUERZA el color de fondo a blanco para eliminar artefactos visuales */
-        .stApp {
-            background-color: white !important;
         }
         
         /* Ajuste de margen superior para centrar los títulos */
@@ -363,23 +371,22 @@ def main():
     with col2:
         st.write("") 
         st.markdown(
-            "<h1 style='text-align: center; font-size: 4em; font-weight: 900; color: #333; margin-bottom: 0;'>TRAIL SOUND</h1>", 
+            "<h1 style='text-align: center; font-size: 4em; font-weight: 900; color: white !important; margin-bottom: 0;'>TRAIL SOUND</h1>", 
             unsafe_allow_html=True
         )
         st.markdown(
-            "<p style='text-align: center; font-size: 1.5em; color: #555;'>Transform your trail runs into unique melodies</p>", 
-            unsafe_allow_html=True
-        )
-        
-        # --- Contenedor para la Carga (Mantiene el uploader centrado) ---
-        # Ahora el st.markdown que crea la tarjeta envuelve directamente solo el uploader y el h2.
-        st.markdown(
-            f'<div class="stContainerStyle" style="max-width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); border: 1px solid #ddd; background-color: white; padding: 20px;">', 
+            "<p style='text-align: center; font-size: 1.5em; color: #aaa !important;'>Transform your trail runs into unique melodies</p>", 
             unsafe_allow_html=True
         )
         
+        # --- Contenedor para la Carga (La única estructura visible en el centro) ---
         st.markdown(
-            "<h2 style='text-align: center; font-size: 1.5em;'>Arraste o suba su archivo GPX:</h2>", 
+            f'<div class="stContainerStyle">', 
+            unsafe_allow_html=True
+        )
+        
+        st.markdown(
+            "<h2 style='text-align: center; font-size: 1.5em; color: #333 !important;'>Arraste o suba su archivo GPX:</h2>", 
             unsafe_allow_html=True
         )
         
