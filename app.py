@@ -24,20 +24,17 @@ TRACK_PERCUSION = 1
 CANAL_PERCUSION = 9           
 
 # --- AJUSTES ESPECÍFICOS DE RITMO/PERCUSIÓN ---
-BOMBO_MIDI_NOTE = 36          # C2 (Bass Drum - Bombo, para el golpe fuerte/pulso)
-CAJA_MIDI_NOTE = 38           # D2 (Snare Drum - Caja, para el ritmo de carrera)
-THRESHOLD_FAST_SPEED = 3.0    # m/s (Umbral para considerar la carrera como rápida)
-
+BOMBO_MIDI_NOTE = 36          
+CAJA_MIDI_NOTE = 38           
+THRESHOLD_FAST_SPEED = 3.0    
 
 # --- FUNCIONES AUXILIARES DE AUDIO ---
 
 def download_soundfont():
     """Descarga el SoundFont si no está presente en el entorno de Streamlit."""
     sf2_path = "FluidR3Mono_GM.sf3"
-    # Solo intenta descargar si el archivo no existe
     if not os.path.exists(sf2_path):
         st.info("Descargando el sintetizador de sonido (sólo la primera vez)...")
-        # Usamos os.system para asegurar que wget se ejecute en el entorno
         os.system(f"wget -q https://github.com/musescore/MuseScore/raw/master/share/sound/FluidR3Mono_GM.sf3")
     return sf2_path
 
@@ -48,22 +45,18 @@ def convert_midi_to_audio(midi_buffer):
     sf2_path = download_soundfont()
     midi_buffer.seek(0)
     
-    # 1. Creamos un archivo temporal para el MIDI
     with tempfile.NamedTemporaryFile(suffix='.mid', delete=False) as tmp_midi:
         tmp_midi.write(midi_buffer.read())
         tmp_midi_path = tmp_midi.name
 
-    # 2. Definimos la ruta de salida del WAV
     tmp_wav_path = tmp_midi_path.replace('.mid', '.wav')
     
-    # 3. Ejecutamos fluidsynth para convertir MIDI a WAV
     try:
         command = [
             "fluidsynth", "-ni", sf2_path, tmp_midi_path, "-F", tmp_wav_path, "-r", "44100"
         ]
         subprocess.run(command, check=True, capture_output=True)
         
-        # 4. Leemos el contenido WAV y limpiamos los archivos temporales
         with open(tmp_wav_path, "rb") as f:
             wav_content = f.read()
         
@@ -73,7 +66,6 @@ def convert_midi_to_audio(midi_buffer):
         st.error(f"Error en la conversión de audio (Fluidsynth): {e.stderr.decode()}")
         return None
     finally:
-        # 5. Limpieza
         os.remove(tmp_midi_path)
         if os.path.exists(tmp_wav_path):
             os.remove(tmp_wav_path)
@@ -121,7 +113,7 @@ def get_mapping_values(point, avg_speed, data_min_max):
         # Fallback a la estimación si la cadencia real no se encuentra
         cadence_value = 100 + (avg_speed * 20) 
     
-    # Escalar la cadencia a un valor entre 0 y 1 para mapeo
+    # Escalar la cadencia a un valor entre 0 and 1 para mapeo
     cadence_scaled = (cadence_value - MIN_CADENCE) / (MAX_CADENCE - MIN_CADENCE)
     cadence_scaled = max(0.0, min(1.0, cadence_scaled))
 
@@ -221,10 +213,8 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
                 pitch_melodia = int(pitch_melodia)
                 
                 # 2. DURACIÓN (BEAT): 
-                # Si la fuente del beat es Ritmo (Velocidad), usamos avg_speed
                 if beat_source == 'Ritmo (Velocidad)':
-                    beat_speed = scaled_values['Ritmo (Velocidad)'] # m/s
-                # Si es Altitud/Cadencia, usamos el valor escalado de 0 a 1 para simular la velocidad
+                    beat_speed = scaled_values['Ritmo (Velocidad)']
                 else:
                     beat_value = 1.0 - scaled_values[beat_source]
                     beat_speed = beat_value * VELOCIDAD_MAX_PARA_DURACION
@@ -234,8 +224,8 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
 
                 # 3. BAJOS (TONO)
                 bass_scaled_value = scaled_values[bass_source]
-                MIN_PITCH_BAJO = 24  
-                MAX_PITCH_BAJO = 48  
+                MIN_PITCH_BAJO = 24  # C1
+                MAX_PITCH_BAJO = 48  # C3
                 pitch_bajo_range = MAX_PITCH_BAJO - MIN_PITCH_BAJO
                 
                 pitch_bajo = MIN_PITCH_BAJO + round(bass_scaled_value * pitch_bajo_range)
@@ -243,18 +233,42 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
                 
                 # --- PERCUSIÓN (GOLPE/PULSO) ---
                 
-                # Lógica de Percusión: Más extrema (Bombo/Caja)
-                if beat_speed < THRESHOLD_FAST_SPEED:
-                    percussion_note = BOMBO_MIDI_NOTE # Lento/Trote (Bombo más profundo)
-                    percussion_duration = duration   # El golpe sigue la duración del ritmo (lento = notas largas)
-                else:
-                    percussion_note = CAJA_MIDI_NOTE # Rápido (Caja más rítmica)
-                    percussion_duration = duration / 2.0 # Golpes más rápidos y secos (semicorcheas)
+                # 🎯 NUEVA LÓGICA: Cadencia Duplicada para el Pulso Rítmico
+                cadence_for_beat = scaled_values['Cadencia'] * (MAX_CADENCE - MIN_CADENCE) + MIN_CADENCE
                 
+                # Multiplicamos la cadencia (pasos/min) por 2 para obtener el pulso (BPM)
+                target_pulses_per_minute = cadence_for_beat * 2.0 
+                
+                # Calculamos cuántos beats de la canción MIDI (a 100 BPM) dura cada pulso real
+                # Ejemplo: 180 pulsos/min. 100 BPM. Pulso dura: (60/180) / (60/100) = 0.55 beats
+                # Simplificación: 60 / target_pulses_per_minute = tiempo en segundos por pulso
+                # (60 / tempo) = tiempo en segundos por beat MIDI
+                
+                # Duración de cada pulso de percusión en términos de beats MIDI
+                if target_pulses_per_minute > 0:
+                    beat_duration_midi = tempo / target_pulses_per_minute
+                else:
+                    beat_duration_midi = 1.0 # Default si la cadencia es cero
+
+                # 4. Generar Múltiples Golpes de Percusión
+                
+                # Cuántos pulsos caben dentro de la duración de la nota melódica (duration)
+                num_pulses = math.floor(duration / beat_duration_midi)
+                
+                if avg_speed < THRESHOLD_FAST_SPEED:
+                    percussion_note = BOMBO_MIDI_NOTE 
+                else:
+                    percussion_note = CAJA_MIDI_NOTE 
+
+                # Generamos los pulsos
+                for j in range(num_pulses):
+                    pulse_time = time + (j * beat_duration_midi)
+                    # La duración de cada golpe de percusión es muy corta (staccato)
+                    midifile.addNote(TRACK_PERCUSION, CANAL_PERCUSION, percussion_note, pulse_time, 0.1, PERCUSION_VELOCITY)
+
                 # --- AÑADIR NOTAS A TRACKS ---
                 midifile.addNote(TRACK_MELODIA, 0, pitch_melodia, time, duration, 100)
                 midifile.addNote(2, 0, pitch_bajo, time, duration, 90)                 
-                midifile.addNote(TRACK_PERCUSION, CANAL_PERCUSION, percussion_note, time, percussion_duration, 100) 
 
                 next_note_distance += DISTANCE_STEP_M
                 last_point_time = p_curr.time
@@ -267,7 +281,7 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
     midi_buffer.seek(0)
     return midi_buffer
 
-# --- FUNCIÓN PRINCIPAL DE STREAMLIT ---
+# --- FUNCIÓN PRINCIPAL DE STREAMLIT (omitted for brevity, assume it remains the same) ---
 def main():
     st.set_page_config(page_title="Trail Sonification App", layout="centered")
 
