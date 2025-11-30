@@ -27,6 +27,7 @@ CANAL_PERCUSION = 9
 BOMBO_MIDI_NOTE = 36          
 CAJA_MIDI_NOTE = 38           
 THRESHOLD_FAST_SPEED = 3.0    
+EMA_ALPHA = 0.1 # Factor de suavizado para la Cadencia (0.1 = muy suave)
 
 # --- FUNCIONES AUXILIARES DE AUDIO ---
 
@@ -178,6 +179,9 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
     last_point_time = None
     time = 0.0
     
+    # 🎯 Inicialización para el suavizado de la cadencia
+    smoothed_cadence = MIN_CADENCE 
+    
     # 3. Iteración y Muestreo
     for i in range(len(segment.points)):
         p_curr = segment.points[i]
@@ -233,22 +237,26 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
                 
                 # --- PERCUSIÓN (GOLPE/PULSO) ---
                 
-                # 🎯 NUEVA LÓGICA: Cadencia Duplicada para el Pulso Rítmico
-                cadence_for_beat = scaled_values['Cadencia'] * (MAX_CADENCE - MIN_CADENCE) + MIN_CADENCE
+                # Obtener la Cadencia actual (real o estimada) para el pulso
+                raw_cadence = scaled_values['Cadencia'] * (MAX_CADENCE - MIN_CADENCE) + MIN_CADENCE
+                
+                # 🎯 APLICAR SUAVIZADO (EMA): Esto garantiza transiciones graduales
+                global smoothed_cadence # Para acceder al valor entre iteraciones
+                if next_note_distance == 0.0:
+                    smoothed_cadence = raw_cadence
+                else:
+                    smoothed_cadence = EMA_ALPHA * raw_cadence + (1.0 - EMA_ALPHA) * smoothed_cadence
+                
+                cadence_for_beat = smoothed_cadence
                 
                 # Multiplicamos la cadencia (pasos/min) por 2 para obtener el pulso (BPM)
                 target_pulses_per_minute = cadence_for_beat * 2.0 
-                
-                # Calculamos cuántos beats de la canción MIDI (a 100 BPM) dura cada pulso real
-                # Ejemplo: 180 pulsos/min. 100 BPM. Pulso dura: (60/180) / (60/100) = 0.55 beats
-                # Simplificación: 60 / target_pulses_per_minute = tiempo en segundos por pulso
-                # (60 / tempo) = tiempo en segundos por beat MIDI
                 
                 # Duración de cada pulso de percusión en términos de beats MIDI
                 if target_pulses_per_minute > 0:
                     beat_duration_midi = tempo / target_pulses_per_minute
                 else:
-                    beat_duration_midi = 1.0 # Default si la cadencia es cero
+                    beat_duration_midi = 1.0
 
                 # 4. Generar Múltiples Golpes de Percusión
                 
