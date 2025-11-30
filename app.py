@@ -30,7 +30,6 @@ THRESHOLD_FAST_SPEED = 3.0
 EMA_ALPHA = 0.1 # Factor de suavizado para la Cadencia (0.1 = muy suave)
 
 # --- INICIALIZACIÓN GLOBAL ---
-# Esta variable guarda el estado del suavizado (EMA) entre las ejecuciones
 smoothed_cadence = MIN_CADENCE 
 
 
@@ -106,20 +105,15 @@ def get_cadence_from_point(p_curr):
 def get_mapping_values(point, avg_speed, data_min_max):
     """Calcula los valores escalados de Altitud, Ritmo y Cadencia para un punto."""
     
-    # 1. Altitud (Altura absoluta)
     ele_min, ele_max, ele_range = data_min_max['ele']
     altitud_value = (point.elevation - ele_min) / ele_range if ele_range > 0 else 0.5
     
-    # 2. Ritmo (Velocidad en m/s)
     ritmo_value = avg_speed
     
-    # 3. Cadencia
     cadence_value = get_cadence_from_point(point)
     if cadence_value is None:
-        # Fallback a la estimación si la cadencia real no se encuentra
         cadence_value = 100 + (avg_speed * 20) 
     
-    # Escalar la cadencia a un valor entre 0 and 1 para mapeo
     cadence_scaled = (cadence_value - MIN_CADENCE) / (MAX_CADENCE - MIN_CADENCE)
     cadence_scaled = max(0.0, min(1.0, cadence_scaled))
 
@@ -134,7 +128,6 @@ def get_mapping_values(point, avg_speed, data_min_max):
 def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, beat_source, bass_source):
     """Procesa los datos GPX usando las asignaciones de variables del usuario."""
     
-    # CORRECCIÓN: La declaración global debe ir al inicio de la función
     global smoothed_cadence 
     
     try:
@@ -144,7 +137,6 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
         
     gpx = gpxpy.parse(gpx_content)
 
-    # 1. PRE-CÁLCULO (Rango de Altitud y Distancia Total)
     all_elevations = []
     segment = gpx.tracks[0].segments[0]
     total_distance_m = 0.0
@@ -168,17 +160,15 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
         'ele': (ele_min, ele_max, ele_range)
     }
     
-    # 2. Inicialización MIDI
     notes_needed = scale_factor * tempo
     DISTANCE_STEP_M = max(5.0, total_distance_m / notes_needed)
     
-    midifile = MIDIFile(3) # 3 pistas (Melodía, Percusión, Bajo)
+    midifile = MIDIFile(3)
     for track in range(3):
         midifile.addTempo(track, 0, tempo)
     
-    # Asignación de instrumentos
-    midifile.addProgramChange(TRACK_MELODIA, 0, 0, 0)   # Piano (Melodía)
-    midifile.addProgramChange(2, 0, 0, 33)              # Track 2: Bajo Eléctrico (Bajos)
+    midifile.addProgramChange(TRACK_MELODIA, 0, 0, 0)   
+    midifile.addProgramChange(2, 0, 0, 33)              
     
     pitch_base = ESCALA_BASE - RANGO_NOTAS / 2
     
@@ -187,7 +177,6 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
     last_point_time = None
     time = 0.0
     
-    # 3. Iteración y Muestreo
     for i in range(len(segment.points)):
         p_curr = segment.points[i]
 
@@ -203,17 +192,13 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
             
             if current_distance >= next_note_distance:
                 
-                # CÁLCULO DE VELOCIDAD
                 if last_point_time is None:
                     avg_speed = 1.67
                 else:
                     delta_time_segment = (p_curr.time - last_point_time).total_seconds()
                     avg_speed = DISTANCE_STEP_M / delta_time_segment if delta_time_segment > 0 else VELOCIDAD_MAX_PARA_DURACION 
                 
-                # OBTENER VALORES ESCALADOS
                 scaled_values = get_mapping_values(p_curr, avg_speed, data_min_max)
-                
-                # --- ASIGNACIÓN DINÁMICA DE PARÁMETROS MUSICALES ---
                 
                 # 1. MELODÍA (TONO)
                 melody_scaled_value = scaled_values[melody_source]
@@ -233,8 +218,8 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
 
                 # 3. BAJOS (TONO)
                 bass_scaled_value = scaled_values[bass_source]
-                MIN_PITCH_BAJO = 24  # C1
-                MAX_PITCH_BAJO = 48  # C3
+                MIN_PITCH_BAJO = 24 
+                MAX_PITCH_BAJO = 48  
                 pitch_bajo_range = MAX_PITCH_BAJO - MIN_PITCH_BAJO
                 
                 pitch_bajo = MIN_PITCH_BAJO + round(bass_scaled_value * pitch_bajo_range)
@@ -244,7 +229,6 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
                 
                 raw_cadence = scaled_values['Cadencia'] * (MAX_CADENCE - MIN_CADENCE) + MIN_CADENCE
                 
-                # Aplicamos el suavizado (EMA)
                 if next_note_distance == 0.0:
                     smoothed_cadence = raw_cadence
                 else:
@@ -252,17 +236,13 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
                 
                 cadence_for_beat = smoothed_cadence
                 
-                # Multiplicamos la cadencia (pasos/min) por 2 para obtener el pulso (BPM)
                 target_pulses_per_minute = cadence_for_beat * 2.0 
                 
-                # Duración de cada pulso de percusión en términos de beats MIDI
                 if target_pulses_per_minute > 0:
                     beat_duration_midi = tempo / target_pulses_per_minute
                 else:
                     beat_duration_midi = 1.0
 
-                # 4. Generar Múltiples Golpes de Percusión
-                
                 num_pulses = math.floor(duration / beat_duration_midi)
                 
                 if avg_speed < THRESHOLD_FAST_SPEED:
@@ -270,7 +250,6 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
                 else:
                     percussion_note = CAJA_MIDI_NOTE 
 
-                # Generamos los pulsos
                 for j in range(num_pulses):
                     pulse_time = time + (j * beat_duration_midi)
                     midifile.addNote(TRACK_PERCUSION, CANAL_PERCUSION, percussion_note, pulse_time, 0.1, PERCUSION_VELOCITY)
@@ -320,6 +299,16 @@ def main():
         }
         .stFileUploader > div > div > label > div > div:nth-child(2) {
             display: none;
+        }
+        
+        /* FUERZA el color de fondo a blanco para eliminar artefactos visuales */
+        .stApp {
+            background-color: white !important;
+        }
+        
+        /* Ajuste de margen superior para centrar los títulos */
+        .block-container {
+            padding-top: 2rem !important; 
         }
         </style>
     """
@@ -380,8 +369,6 @@ def main():
             "<p style='text-align: center; font-size: 1.5em; color: #555;'>Transform your trail runs into unique melodies</p>", 
             unsafe_allow_html=True
         )
-        # 🎯 Eliminación de la línea residual que creaba el cuadro blanco no deseado
-        # st.markdown("---") 
         
         # --- Contenedor para la Carga (Mantiene el uploader centrado) ---
         st.markdown(
