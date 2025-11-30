@@ -6,7 +6,6 @@ import io
 import os
 import subprocess
 import tempfile
-from pydub import AudioSegment # Necesario para el manejo de audio
 
 # --- AJUSTES DE MAPEO ---
 ESCALA_BASE = 60
@@ -73,7 +72,7 @@ def convert_midi_to_audio(midi_buffer):
         if os.path.exists(tmp_wav_path):
             os.remove(tmp_wav_path)
 
-# --- FUNCIONES AUXILIARES DE MAPEO ---
+# --- FUNCIONES AUXILIARES DE MAPEO Y LÓGICA ---
 
 def snap_to_scale(pitch):
     """Ajusta un tono MIDI a la nota más cercana en la escala pentatónica."""
@@ -100,7 +99,6 @@ def get_cadence_from_point(p_curr):
         pass
     return None
 
-# --- FUNCIÓN DE LÓGICA CENTRAL (SONIFICACIÓN) ---
 @st.cache_data
 def generate_midi_file(gpx_data_content, scale_factor, tempo):
     """Procesa los datos GPX y devuelve el archivo MIDI en un buffer."""
@@ -276,7 +274,6 @@ def main():
             unsafe_allow_html=True
         )
         
-        # --- CARGADOR DE ARCHIVOS (Elemento principal de la interacción) ---
         uploaded_file = st.file_uploader(
             "Archivo GPX", 
             type=["gpx"],
@@ -286,7 +283,6 @@ def main():
 
         st.markdown("---")
 
-        # --- SLIDERS DE AJUSTE ---
         target_minutes = st.slider(
             "**Duración Total de la Canción (min)**", 
             min_value=0.5, max_value=5.0, value=1.0, step=0.1,
@@ -305,7 +301,6 @@ def main():
     if uploaded_file is not None:
         gpx_data_content = uploaded_file.read()
         
-        # Columna de centrado para el mensaje de éxito y el botón
         col_msg1, col_msg2, col_msg3 = st.columns([1, 3, 1])
         with col_msg2:
             with st.spinner('Procesando datos y componiendo...'):
