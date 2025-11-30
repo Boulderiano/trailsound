@@ -380,7 +380,7 @@ def main():
             "<p style='text-align: center; font-size: 1.5em; color: #555;'>Transform your trail runs into unique melodies</p>", 
             unsafe_allow_html=True
         )
-        st.markdown("---") 
+        # ELIMINAR ESTA LÍNEA -> st.markdown("---") 
         
         # --- Contenedor para la Carga (Mantiene el uploader centrado) ---
         st.markdown(
