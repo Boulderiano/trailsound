@@ -274,7 +274,7 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
 
 def main():
     # 🎯 CONFIGURACIÓN: Usamos 'wide' y 'expanded' para el estado inicial
-    st.set_page_config(page_title="Trail Sonification App", layout="wide", initial_sidebar_state="expanded")
+   st.set_page_config(page_title="Trail Sonification App", layout="centered")
 
     # 1. CSS and JavaScript for styling and fixing the sidebar state
     
