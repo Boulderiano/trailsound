@@ -164,11 +164,10 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
     notes_needed = scale_factor * tempo
     DISTANCE_STEP_M = max(5.0, total_distance_m / notes_needed)
     
-    midifile = MIDIFile(3) # 3 tracks (Melody, Percussion, Bass)
+    midifile = MIDIFile(3) # 3 pistas (Melodía, Percusión, Bajo)
     for track in range(3):
         midifile.addTempo(track, 0, tempo)
     
-    # Asignación de instrumentos
     midifile.addProgramChange(TRACK_MELODIA, 0, 0, 67)   # Saxofón Tenor (67)
     midifile.addProgramChange(2, 0, 0, 35)              # Fretless Bass (35)
     
@@ -202,7 +201,7 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
                 
                 scaled_values = get_mapping_values(p_curr, avg_speed, data_min_max)
                 
-                # 1. MELODY (PITCH)
+                # 1. MELODY (TONE)
                 melody_scaled_value = scaled_values[melody_source]
                 pitch_raw = pitch_base + (melody_scaled_value * RANGO_NOTAS)
                 pitch_melodia = snap_to_scale(pitch_raw) 
@@ -218,7 +217,7 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
                 speed_factor = max(0, 1 - (beat_speed / VELOCIDAD_MAX_PARA_DURACION))
                 duration = DURACION_MINIMA_NOTA + (speed_factor * (4.0 - DURACION_MINIMA_NOTA))
 
-                # 3. BASS (PITCH)
+                # 3. BASS (TONE)
                 bass_scaled_value = scaled_values[bass_source]
                 MIN_PITCH_BAJO = 24 
                 MAX_PITCH_BAJO = 48  
@@ -247,7 +246,6 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
 
                 num_pulses = math.floor(duration / beat_duration_midi)
                 
-                # Use only the Bass Drum for constant, clear beat
                 percussion_note = BOMBO_MIDI_NOTE 
 
                 for j in range(num_pulses):
@@ -270,15 +268,11 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
     return midi_buffer
 
 # --- FUNCIÓN PRINCIPAL DE STREAMLIT ---
-# Reemplaza el bloque completo de hide_streamlit_style en tu app.py
-
 def main():
-    # 🎯 CONFIGURACIÓN: Usamos 'wide' y 'expanded' para el estado inicial
-   st.set_page_config(page_title="Trail Sonification App", layout="centered")
+    # 🎯 CONFIGURACIÓN: Usamos layout="centered" para mantener la consistencia
+    st.set_page_config(page_title="Trail Sonification App", layout="centered")
 
-    # 1. CSS and JavaScript for styling and fixing the sidebar state
-    
-    # CSS principal para colores y ocultar elementos
+    # 1. CSS for styling and hiding Streamlit UI
     hide_streamlit_style = """
         <style>
         #MainMenu {visibility: hidden;}
@@ -321,44 +315,13 @@ def main():
             display: none;
         }
         
-        /* Ajuste de margen superior para centrar los títulos */
+        /* Adjust top margin for centering */
         .block-container {
             padding-top: 2rem !important; 
         }
         </style>
     """
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)
-    
-    # ***************************************************************
-    # *** CÓDIGO CLAVE: Inyección de JavaScript para forzar la apertura ***
-    # ***************************************************************
-    # Esto es necesario porque Streamlit puede ignorar initial_sidebar_state="expanded"
-    # al recargar, pero el usuario debe poder cerrarla si quiere.
-    
-    js_code = """
-    <script>
-        function openSidebar() {
-            const sidebar = window.parent.document.querySelector('.st-emotion-cache-12msjr9');
-            if (sidebar && sidebar.style.cssText.includes('width: 0px')) {
-                // Si la barra lateral existe y tiene un ancho de 0px (está colapsada), expandirla.
-                // Esta es una solución CSS/JS que apunta a las clases de Streamlit.
-                // Si el usuario la cierra manualmente después de esto, ya es su acción.
-                const collapseButton = window.parent.document.querySelector('[title="Expandar la barra lateral"]');
-                if (collapseButton) {
-                    collapseButton.click();
-                }
-            }
-        }
-        // Ejecutar la función al cargar la página
-        setTimeout(openSidebar, 50); 
-    </script>
-    """
-    st.components.v1.html(js_code, height=0, width=0) # Inyectar el JS
-    
-    # --- Sidebar Configuration (The rest of the main() function continues below) ---
-    
-    st.sidebar.header("Musical Adjustments")
-    # ... (El resto del código de la barra lateral y el área central sigue igual) ...
 
 
     # --- Sidebar Configuration (New Location for Controls) ---
