@@ -245,22 +245,18 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
                 else:
                     beat_duration_midi = 1.0
 
-                # 🎯 CAMBIO CLAVE: Un solo golpe de tambor por nota melódica, el ritmo lo da la duración de la melodía.
+                num_pulses = math.floor(duration / beat_duration_midi)
+                
+                # Use only the Bass Drum for constant, clear beat
                 percussion_note = BOMBO_MIDI_NOTE 
-                
-                # Mapeamos la cadencia suavizada al volumen (Velocity) para la intensidad
-                MIN_VEL = 60
-                MAX_VEL = 127
-                cadence_normalized = (smoothed_cadence - MIN_CADENCE) / (MAX_CADENCE - MIN_CADENCE)
-                percussion_velocity = int(MIN_VEL + cadence_normalized * (MAX_VEL - MIN_VEL))
-                
-                
+
+                for j in range(num_pulses):
+                    pulse_time = time + (j * beat_duration_midi)
+                    midifile.addNote(TRACK_PERCUSION, CANAL_PERCUSION, percussion_note, pulse_time, 0.1, PERCUSION_VELOCITY)
+
                 # --- ADD NOTES TO TRACKS ---
                 midifile.addNote(TRACK_MELODIA, 0, pitch_melodia, time, duration, 100)
                 midifile.addNote(2, 0, pitch_bajo, time, duration, 90)                 
-
-                # Percusión: Toca una vez, su volumen refleja la cadencia.
-                midifile.addNote(TRACK_PERCUSION, CANAL_PERCUSION, percussion_note, time, 0.1, percussion_velocity)
 
                 next_note_distance += DISTANCE_STEP_M
                 last_point_time = p_curr.time
@@ -275,7 +271,8 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
 
 # --- FUNCIÓN PRINCIPAL DE STREAMLIT ---
 def main():
-    st.set_page_config(page_title="Trail Sonification App", layout="centered")
+    # 🎯 CAMBIO CLAVE: initial_sidebar_state="expanded"
+    st.set_page_config(page_title="Trail Sonification App", layout="wide", initial_sidebar_state="expanded")
 
     # 1. CSS for styling and hiding Streamlit UI
     hide_streamlit_style = """
@@ -284,12 +281,12 @@ def main():
         footer {visibility: hidden;}
         header {visibility: hidden;}
         
-        /* FUERZA el fondo a un color oscuro (similar al sidebar) */
+        /* Forces dark background */
         .stApp {
             background-color: #0E1117 !important; 
         }
 
-        /* Estilo para la tarjeta central: FUERZA BLANCO para los elementos interactivos */
+        /* Style for the central card: WHITE background for interactive elements */
         .stContainerStyle {
             background-color: white;
             padding: 30px;
@@ -300,12 +297,12 @@ def main():
             margin: 20px auto;
         }
         
-        /* Títulos Centrales deben ser blancos en el fondo oscuro */
+        /* Central titles should be WHITE on the dark background */
         h1, h2, h3, p {
             color: white !important; 
         }
 
-        /* Título del uploader dentro de la tarjeta debe ser oscuro */
+        /* Uploader title inside the white card should be dark */
         .stContainerStyle h2 {
             color: #333 !important;
         }
@@ -324,19 +321,7 @@ def main():
         .block-container {
             padding-top: 2rem !important; 
         }
-        
-        /* ****************************************************** */
-        /* ** CÓDIGO CLAVE: Oculta el botón de colapso lateral ** */
-        /* ****************************************************** */
-        button[title="Expandar la barra lateral"], button[title="Collapse sidebar"] {
-            visibility: hidden;
-        }
-        
-        /* Asegura que el contenido central no se mueva cuando se oculta el botón */
-        .css-vk325u { /* Esto puede variar, pero apunta al contenedor del contenido principal */
-            margin-left: 0 !important; 
-        }
-
+        /* --- Eliminamos cualquier CSS que esconda o modifique el botón de colapso --- */
         </style>
     """
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)
@@ -381,9 +366,9 @@ def main():
         index=2, 
         help="Data that controls the bass tone (low/high)."
     )
-    st.sidebar.markdown("---") # Sidebar separator
+    st.sidebar.markdown("---") # Separador para la sidebar
 
-    # --- Central Titles and Uploader ---
+    # --- Títulos Centrales y Uploader ---
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
