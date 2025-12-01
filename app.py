@@ -548,7 +548,7 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
 
 def main():
 
-    st.set_page_config(page_title="Trail Sonification App", layout="centered")
+    st.set_page_config(page_title="Trail Sonification App", layout="wide")
 
 
 
@@ -740,8 +740,7 @@ def main():
 
     # --- Títulos Centrales y Uploader ---
 
-    col1, col2, col3 = st.columns([1, 2, 1])
-
+   
     
 
     with col2:
