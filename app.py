@@ -164,10 +164,11 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
     notes_needed = scale_factor * tempo
     DISTANCE_STEP_M = max(5.0, total_distance_m / notes_needed)
     
-    midifile = MIDIFile(3) # 3 pistas (Melodía, Percusión, Bajo)
+    midifile = MIDIFile(3) # 3 tracks (Melody, Percussion, Bass)
     for track in range(3):
         midifile.addTempo(track, 0, tempo)
     
+    # Asignación de instrumentos
     midifile.addProgramChange(TRACK_MELODIA, 0, 0, 67)   # Saxofón Tenor (67)
     midifile.addProgramChange(2, 0, 0, 35)              # Fretless Bass (35)
     
@@ -201,7 +202,7 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
                 
                 scaled_values = get_mapping_values(p_curr, avg_speed, data_min_max)
                 
-                # 1. MELODY (TONE)
+                # 1. MELODY (PITCH)
                 melody_scaled_value = scaled_values[melody_source]
                 pitch_raw = pitch_base + (melody_scaled_value * RANGO_NOTAS)
                 pitch_melodia = snap_to_scale(pitch_raw) 
@@ -217,7 +218,7 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
                 speed_factor = max(0, 1 - (beat_speed / VELOCIDAD_MAX_PARA_DURACION))
                 duration = DURACION_MINIMA_NOTA + (speed_factor * (4.0 - DURACION_MINIMA_NOTA))
 
-                # 3. BASS (TONE)
+                # 3. BASS (PITCH)
                 bass_scaled_value = scaled_values[bass_source]
                 MIN_PITCH_BAJO = 24 
                 MAX_PITCH_BAJO = 48  
@@ -244,17 +245,22 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
                 else:
                     beat_duration_midi = 1.0
 
-                num_pulses = math.floor(duration / beat_duration_midi)
-                
+                # 🎯 CAMBIO CLAVE: Un solo golpe de tambor por nota melódica, el ritmo lo da la duración de la melodía.
                 percussion_note = BOMBO_MIDI_NOTE 
-
-                for j in range(num_pulses):
-                    pulse_time = time + (j * beat_duration_midi)
-                    midifile.addNote(TRACK_PERCUSION, CANAL_PERCUSION, percussion_note, pulse_time, 0.1, PERCUSION_VELOCITY)
-
+                
+                # Mapeamos la cadencia suavizada al volumen (Velocity) para la intensidad
+                MIN_VEL = 60
+                MAX_VEL = 127
+                cadence_normalized = (smoothed_cadence - MIN_CADENCE) / (MAX_CADENCE - MIN_CADENCE)
+                percussion_velocity = int(MIN_VEL + cadence_normalized * (MAX_VEL - MIN_VEL))
+                
+                
                 # --- ADD NOTES TO TRACKS ---
                 midifile.addNote(TRACK_MELODIA, 0, pitch_melodia, time, duration, 100)
                 midifile.addNote(2, 0, pitch_bajo, time, duration, 90)                 
+
+                # Percusión: Toca una vez, su volumen refleja la cadencia.
+                midifile.addNote(TRACK_PERCUSION, CANAL_PERCUSION, percussion_note, time, 0.1, percussion_velocity)
 
                 next_note_distance += DISTANCE_STEP_M
                 last_point_time = p_curr.time
@@ -269,7 +275,6 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
 
 # --- FUNCIÓN PRINCIPAL DE STREAMLIT ---
 def main():
-    # 🎯 CAMBIO CLAVE: layout="centered" para mantener la consistencia
     st.set_page_config(page_title="Trail Sonification App", layout="centered")
 
     # 1. CSS for styling and hiding Streamlit UI
@@ -363,9 +368,9 @@ def main():
         index=2, 
         help="Data that controls the bass tone (low/high)."
     )
-    st.sidebar.markdown("---") # Separador para la sidebar
+    st.sidebar.markdown("---") # Sidebar separator
 
-    # --- Títulos Centrales y Uploader ---
+    # --- Central Titles and Uploader ---
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
