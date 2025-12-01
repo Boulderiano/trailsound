@@ -284,14 +284,14 @@ def main():
         footer {visibility: hidden;}
         header {visibility: hidden;}
         
-        /* Forces dark background */
+        /* FUERZA el fondo a un color oscuro (similar al sidebar) */
         .stApp {
             background-color: #0E1117 !important; 
         }
 
-        /* Style for the central card: WHITE background for interactive elements */
+        /* Estilo para la tarjeta central: FUERZA BLANCO para los elementos interactivos */
         .stContainerStyle {
-            background-color: #0E1117;
+            background-color: white;
             padding: 30px;
             border-radius: 10px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); 
@@ -300,12 +300,12 @@ def main():
             margin: 20px auto;
         }
         
-        /* Central titles should be WHITE on the dark background */
+        /* Títulos Centrales deben ser blancos en el fondo oscuro */
         h1, h2, h3, p {
             color: white !important; 
         }
 
-        /* Uploader title inside the white card should be dark */
+        /* Título del uploader dentro de la tarjeta debe ser oscuro */
         .stContainerStyle h2 {
             color: #333 !important;
         }
@@ -320,10 +320,23 @@ def main():
             display: none;
         }
         
-        /* Adjust top margin for centering */
+        /* Ajuste de margen superior para centrar los títulos */
         .block-container {
             padding-top: 2rem !important; 
         }
+        
+        /* ****************************************************** */
+        /* ** CÓDIGO CLAVE: Oculta el botón de colapso lateral ** */
+        /* ****************************************************** */
+        button[title="Expandar la barra lateral"], button[title="Collapse sidebar"] {
+            visibility: hidden;
+        }
+        
+        /* Asegura que el contenido central no se mueva cuando se oculta el botón */
+        .css-vk325u { /* Esto puede variar, pero apunta al contenedor del contenido principal */
+            margin-left: 0 !important; 
+        }
+
         </style>
     """
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)
