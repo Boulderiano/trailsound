@@ -275,7 +275,7 @@ def main():
     # 1. CSS for styling and hiding Streamlit UI
     hide_streamlit_style = """
         <style>
-        #MainMenu {visibility: show;}
+        #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
         header {visibility: hidden;}
         
@@ -298,11 +298,6 @@ def main():
         /* Central titles should be WHITE on the dark background */
         h1, h2, h3, p {
             color: white !important; 
-        }
-
-        /* Uploader title inside the white card should be dark */
-        .stContainerStyle h2 {
-            color: #333 !important;
         }
 
         /* Uploader styling */
