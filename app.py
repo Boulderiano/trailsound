@@ -269,8 +269,8 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
 
 # --- FUNCIÓN PRINCIPAL DE STREAMLIT ---
 def main():
-    # 🎯 CAMBIO CLAVE: Usamos layout="wide" y initial_sidebar_state="auto"
-    st.set_page_config(page_title="Trail Sonification App", layout="wide", initial_sidebar_state="auto")
+    # 🎯 CONFIGURACIÓN: Usamos layout="centered" para mantener la consistencia
+    st.set_page_config(page_title="Trail Sonification App", layout="centered")
 
     # 1. CSS for styling and hiding Streamlit UI
     hide_streamlit_style = """
@@ -291,7 +291,7 @@ def main():
             border-radius: 10px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); 
             width: 100%;
-            max-width: 500px; /* Mantener un ancho razonable */
+            max-width: 500px;
             margin: 20px auto;
         }
         
@@ -319,14 +319,30 @@ def main():
         .block-container {
             padding-top: 2rem !important; 
         }
-        /* ELIMINAMOS CUALQUIER CSS QUE HAYA ESTADO OCULTANDO EL BOTÓN DE LA BARRA LATERAL */
+
+        /* ****************************************************** */
+        /* ** SOLUCIÓN DEFINITIVA: FORZAR LA VISIBILIDAD DEL BOTÓN ** */
+        /* ****************************************************** */
+        /* Hace que el botón de apertura (el que tiene el título de expansión) sea visible, */
+        /* incluso si Streamlit intenta ocultarlo. */
+        button[title="Expandar la barra lateral"], button[title="Collapse sidebar"] {
+            visibility: visible !important;
+            opacity: 1 !important;
+            display: flex !important;
+            z-index: 1000 !important;
+            
+            /* Asegura que el botón esté en la esquina superior izquierda */
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
         </style>
     """
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 
     # --- Sidebar Configuration (New Location for Controls) ---
-    st.sidebar.header("Musical Adjustments")
+    st.sidebar.header("Ajustes Musicales")
 
     # Sliders
     target_minutes = st.sidebar.slider(
@@ -347,7 +363,7 @@ def main():
 
     # Selectors
     melody_source = st.sidebar.selectbox(
-        "**1. Melody (Pitch)**",
+        "**1. Melodía (Tono)**",
         SOURCES,
         index=0, 
         help="Data that controls the notes (low/high)."
@@ -359,7 +375,7 @@ def main():
         help="Data that controls the length of the notes (slow/fast)."
     )
     bass_source = st.sidebar.selectbox(
-        "**3. Bass (Pitch)**",
+        "**3. Bajos (Tono)**",
         SOURCES,
         index=2, 
         help="Data that controls the bass tone (low/high)."
