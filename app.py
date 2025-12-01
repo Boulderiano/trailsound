@@ -291,7 +291,7 @@ def main():
 
         /* Style for the central card: WHITE background for interactive elements */
         .stContainerStyle {
-            background-color: white;
+            background-color: #0E1117;
             padding: 30px;
             border-radius: 10px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); 
