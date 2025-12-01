@@ -570,7 +570,7 @@ def main():
 
         .stApp {
 
-            background-color: #0E1117 !important; 
+            background-color: #808080 !important; 
 
         }
 
