@@ -340,10 +340,17 @@ def main():
         initial_sidebar_state="expanded" 
     )
 
-    # 1. CSS para estilizar el contenedor (simplificado)
+ # 1. CSS para estilizar el contenedor (simplificado)
     hide_streamlit_style = """
         <style>
-        #MainMenu, footer, header {visibility: hidden;}
+        /* Oculta el menú principal, pie de página y cabecera */
+        #MainMenu, footer, header {visibility: hidden;} 
+        
+        /* Oculta el icono de la hamburguesa/colapso de la barra lateral */
+        .stApp header button[title="Collapse sidebar"] {
+            display: none !important;
+        }
+
         .stApp { background-color: #0E1117 !important; }
         h1, h2, h3, p, .stDownloadButton label { color: white !important; }
         .block-container { padding-top: 2rem !important; }
