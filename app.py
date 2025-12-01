@@ -269,8 +269,8 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
 
 # --- FUNCIÓN PRINCIPAL DE STREAMLIT ---
 def main():
-    # 🎯 CONFIGURACIÓN: Usamos layout="centered" para mantener la consistencia
-    st.set_page_config(page_title="Trail Sonification App", layout="centered")
+    # 🎯 CAMBIO CLAVE: Usamos layout="wide" y initial_sidebar_state="auto"
+    st.set_page_config(page_title="Trail Sonification App", layout="wide", initial_sidebar_state="auto")
 
     # 1. CSS for styling and hiding Streamlit UI
     hide_streamlit_style = """
@@ -291,13 +291,18 @@ def main():
             border-radius: 10px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); 
             width: 100%;
-            max-width: 500px;
+            max-width: 500px; /* Mantener un ancho razonable */
             margin: 20px auto;
         }
         
         /* Central titles should be WHITE on the dark background */
         h1, h2, h3, p {
             color: white !important; 
+        }
+
+        /* Uploader title inside the white card should be dark */
+        .stContainerStyle h2 {
+            color: #333 !important;
         }
 
         /* Uploader styling */
@@ -314,6 +319,7 @@ def main():
         .block-container {
             padding-top: 2rem !important; 
         }
+        /* ELIMINAMOS CUALQUIER CSS QUE HAYA ESTADO OCULTANDO EL BOTÓN DE LA BARRA LATERAL */
         </style>
     """
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)
