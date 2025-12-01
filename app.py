@@ -359,7 +359,7 @@ def main():
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)
     
     st.markdown(
-        "<h1 style='text-align: center; font-size: 4em; font-weight: 900; color: white !important; margin-bottom: 0;'>👟 TRAIL SOUND 🎶</h1>",
+        "<h1 style='text-align: center; font-size: 4em; font-weight: 900; color: white !important; margin-bottom: 0;'> <i> TRAIL SOUND </i></h1>",
         unsafe_allow_html=True
     )
     st.markdown(
