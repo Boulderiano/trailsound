@@ -333,7 +333,12 @@ def generate_midi_file(gpx_data_content, distance_step_m, tempo, melody_source, 
 # --- 🖥️ FUNCIÓN PRINCIPAL DE STREAMLIT ---
 
 def main():
-    st.set_page_config(page_title="Trail Sonification App", layout="centered")
+    st.set_page_config(
+        page_title="Trail Sonification App", 
+        layout="centered",
+        # 🔑 ESTA ES LA CLAVE: Fuerza la barra lateral a estar siempre expandida
+        initial_sidebar_state="expanded" 
+    )
 
     # 1. CSS para estilizar el contenedor (simplificado)
     hide_streamlit_style = """
