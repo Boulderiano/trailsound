@@ -275,7 +275,7 @@ def main():
     # 1. CSS for styling and hiding Streamlit UI
     hide_streamlit_style = """
         <style>
-        #MainMenu {visibility: hidden;}
+        #MainMenu {visibility: show;}
         footer {visibility: hidden;}
         header {visibility: hidden;}
         
