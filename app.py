@@ -270,11 +270,15 @@ def generate_midi_file(gpx_data_content, scale_factor, tempo, melody_source, bea
     return midi_buffer
 
 # --- FUNCIÓN PRINCIPAL DE STREAMLIT ---
+# Reemplaza el bloque completo de hide_streamlit_style en tu app.py
+
 def main():
-    # 🎯 CAMBIO CLAVE: initial_sidebar_state="expanded"
+    # 🎯 CONFIGURACIÓN: Usamos 'wide' y 'expanded' para el estado inicial
     st.set_page_config(page_title="Trail Sonification App", layout="wide", initial_sidebar_state="expanded")
 
-    # 1. CSS for styling and hiding Streamlit UI
+    # 1. CSS and JavaScript for styling and fixing the sidebar state
+    
+    # CSS principal para colores y ocultar elementos
     hide_streamlit_style = """
         <style>
         #MainMenu {visibility: hidden;}
@@ -321,10 +325,40 @@ def main():
         .block-container {
             padding-top: 2rem !important; 
         }
-        /* --- Eliminamos cualquier CSS que esconda o modifique el botón de colapso --- */
         </style>
     """
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+    
+    # ***************************************************************
+    # *** CÓDIGO CLAVE: Inyección de JavaScript para forzar la apertura ***
+    # ***************************************************************
+    # Esto es necesario porque Streamlit puede ignorar initial_sidebar_state="expanded"
+    # al recargar, pero el usuario debe poder cerrarla si quiere.
+    
+    js_code = """
+    <script>
+        function openSidebar() {
+            const sidebar = window.parent.document.querySelector('.st-emotion-cache-12msjr9');
+            if (sidebar && sidebar.style.cssText.includes('width: 0px')) {
+                // Si la barra lateral existe y tiene un ancho de 0px (está colapsada), expandirla.
+                // Esta es una solución CSS/JS que apunta a las clases de Streamlit.
+                // Si el usuario la cierra manualmente después de esto, ya es su acción.
+                const collapseButton = window.parent.document.querySelector('[title="Expandar la barra lateral"]');
+                if (collapseButton) {
+                    collapseButton.click();
+                }
+            }
+        }
+        // Ejecutar la función al cargar la página
+        setTimeout(openSidebar, 50); 
+    </script>
+    """
+    st.components.v1.html(js_code, height=0, width=0) # Inyectar el JS
+    
+    # --- Sidebar Configuration (The rest of the main() function continues below) ---
+    
+    st.sidebar.header("Musical Adjustments")
+    # ... (El resto del código de la barra lateral y el área central sigue igual) ...
 
 
     # --- Sidebar Configuration (New Location for Controls) ---
