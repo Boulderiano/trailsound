@@ -356,7 +356,7 @@ def main():
         
         /* 💡 NUEVA REGLA CRÍTICA: Fuerza el fondo de la barra lateral a negro/gris oscuro */
         .stSidebar {
-            background-color: #3B3B3B !important; 
+            background-color: #c3c3c3 !important; 
         }
 
         /* Fuerza el texto de la barra lateral y principal a blanco */
