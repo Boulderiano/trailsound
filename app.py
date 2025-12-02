@@ -343,16 +343,33 @@ def main():
  # 1. CSS para estilizar el contenedor (simplificado)
     hide_streamlit_style = """
         <style>
-        /* Oculta el menú principal, pie de página y cabecera */
+        /* 1. OCULTAR ELEMENTOS NATIVOS */
         #MainMenu, footer, header {visibility: hidden;} 
-        
-        /* Oculta el icono de la hamburguesa/colapso de la barra lateral */
         .stApp header button[title="Collapse sidebar"] {
             display: none !important;
         }
 
-        .stApp { background-color: #0E1117 !important; }
-        h1, h2, h3, p, .stDownloadButton label { color: white !important; }
+        /* 2. FORZAR COLORES OSCUROS Y TEXTO BLANCO */
+        .stApp { 
+            background-color: #0E1117 !important; /* Fondo principal negro */
+        }
+        
+        /* 💡 NUEVA REGLA CRÍTICA: Fuerza el fondo de la barra lateral a negro/gris oscuro */
+        .stSidebar {
+            background-color: #0E1117 !important; 
+        }
+
+        /* Fuerza el texto de la barra lateral y principal a blanco */
+        .stSidebar * {
+            color: white !important; 
+        }
+
+        /* Asegura que títulos principales y botones sigan siendo blancos */
+        h1, h2, h3, p, .stDownloadButton label { 
+            color: white !important; 
+        }
+
+        /* Otros ajustes */
         .block-container { padding-top: 2rem !important; }
         </style>
     """
