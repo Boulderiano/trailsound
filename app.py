@@ -351,12 +351,12 @@ def main():
 
         /* 2. FORZAR COLORES OSCUROS Y TEXTO BLANCO */
         .stApp { 
-            background-color: #808080 !important; /* Fondo principal negro */
+            background-color: #3B3B3B !important; /* Fondo principal negro */
         }
         
         /* 💡 NUEVA REGLA CRÍTICA: Fuerza el fondo de la barra lateral a negro/gris oscuro */
         .stSidebar {
-            background-color: #808080 !important; 
+            background-color: #3B3B3B !important; 
         }
 
         /* Fuerza el texto de la barra lateral y principal a blanco */
